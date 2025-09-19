@@ -1,0 +1,39 @@
+# IAR / EWARM build outputs
+/project/iar/Debug_m7_0/
+/project/iar/Debug_m7_1/
+/project/iar/settings/
+/Release/
+/Output/
+/Objects/
+/_build/
+/build/
+
+# 常见二进制/中间文件
+*.o
+*.obj
+*.a
+*.lib
+*.axf
+*.out
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.log
+*.d
+*.dep
+*.ewd
+*.cod
+
+# IAR workspace / user settings（可选保留项目文件 .ewp，忽略用户/临时工作区）
+*.eww.user
+*.eww
+
+# 临时/编辑器文件
+*~
+*.tmp
+*.swp
+*.bak
+Thumbs.db
+.DS_Store

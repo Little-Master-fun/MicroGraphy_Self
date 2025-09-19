@@ -1441,6 +1441,15 @@
             </file>
         </group>
         <group>
+            <name>control</name>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\control\motor_control.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\control\motor_control.h</name>
+            </file>
+        </group>
+        <group>
             <name>drivers</name>
             <file>
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_encoder.c</name>

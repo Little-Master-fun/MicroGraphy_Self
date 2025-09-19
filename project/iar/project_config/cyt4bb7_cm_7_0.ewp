@@ -377,6 +377,7 @@
                     <state>$PROJ_DIR$\..\..\code\config</state>
                     <state>$PROJ_DIR$\..\..\code\test</state>
                     <state>$PROJ_DIR$\..\..\code\drivers</state>
+                    <state>$PROJ_DIR$\..\..\code\control</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1128,6 +1129,15 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\code\config\config_navigation.h</name>
+            </file>
+        </group>
+        <group>
+            <name>control</name>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\control\motor_control.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\control\motor_control.h</name>
             </file>
         </group>
         <group>

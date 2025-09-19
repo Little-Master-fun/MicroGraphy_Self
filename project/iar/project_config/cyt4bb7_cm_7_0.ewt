@@ -1433,12 +1433,6 @@
             <file>
                 <name>$PROJ_DIR$\..\..\code\config\config_infineon.h</name>
             </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\config\config_navigation.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\config\config_navigation.h</name>
-            </file>
         </group>
         <group>
             <name>control</name>
@@ -1456,6 +1450,12 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_encoder.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\driver_flash_road.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\driver_flash_road.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_motor.c</name>

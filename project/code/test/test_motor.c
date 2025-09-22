@@ -1,296 +1,300 @@
 /*********************************************************************************************************************
 * 文件名称          test_motor.c
-* 功能说明          双电机驱动测试程序实现文件
+* 功能说明          电机驱动测试程序（简化版）
 * 作者              LittleMaster
-* 版本信息          v1.0
+* 版本信息          v2.0
 * 修改记录
-* 日期              作者                版本
-* 2025-09-17        LittleMaster       1.0v
+* 日期              作者                版本              备注
+* 2025-09-17        LittleMaster       1.0v              创建基础电机测试功能
+* 2025-09-22        LittleMaster       2.0v              简化为按键控制测试系统
 * 
 * 文件作用说明：
-* 本文件为双电机驱动测试程序的实现，用于验证电机驱动的各项功能
+* 本文件为电机驱动的简化测试程序，提供按键控制的电机测试功能
 * 
-* 测试内容：
-* 1. 电机基本功能测试（初始化、方向控制、停止）
-* 2. 电机速度控制测试（不同速度档位）
-* 3. 差速运动测试（直行、转弯、原地转向）
-* 4. 综合功能测试
+* 测试功能：
+* - KEY1(P00_3): 左右电机以1m/s速度转动
+* - KEY2(P00_2): 左右电机以3.5m/s速度转动  
+* - KEY3(P01_0): 以1m/s前进一米后停下
+* - KEY4(P01_1): 以3.5m/s前进一米后停下
 * 
-* 使用方式：
-* 在主函数中调用相应的测试函数即可开始测试
-* 
-* 注意事项：
-* 1. 确保电机硬件连接正确
-* 2. 测试前检查电源供应是否充足
-* 3. 注意观察电机运行状态，异常时立即停止
+* 使用的优化驱动：
+* - driver_motor.c (简化版)
+* - driver_encoder.c (简化版) 
+* - motor_control.c (简化版PID控制)
 ********************************************************************************************************************/
 
 #include "test_motor.h"
 #include "driver_motor.h"
+#include "driver_encoder.h" 
+#include "motor_control.h"
 #include "zf_device_ips114.h"
 #include "zf_common_headfile.h"
 #include <stdio.h>
+#include <math.h>
 
-//=================================================测试参数定义================================================
-#define TEST_SPEED_LOW          (2000)      // 低速测试值
-#define TEST_SPEED_MEDIUM       (5000)      // 中速测试值
-#define TEST_SPEED_HIGH         (8000)      // 高速测试值
-#define TEST_DELAY_SHORT        (1000)      // 短延时 1秒
-#define TEST_DELAY_MEDIUM       (2000)      // 中延时 2秒
-#define TEST_DELAY_LONG         (3000)      // 长延时 3秒
+//=================================================按键定义================================================
+#define KEY1                    (P00_3)
+#define KEY2                    (P00_2)
+#define KEY3                    (P01_0)
+#define KEY4                    (P01_1)
+
+//=================================================测试参数================================================
+#define TEST_SPEED_LOW          (1.0f)      // 低速：1 m/s
+#define TEST_SPEED_HIGH         (3.5f)      // 高速：3.5 m/s
+#define TEST_DISTANCE           (1000.0f)   // 测试距离：1米 (1000mm)
 
 //=================================================内部函数声明================================================
-static void test_display_info(const char* test_name, const char* status);
-static void test_init_display(void);
+static void test_init_keys(void);
+static void test_display_menu(void);
+static void test_display_status(const char* action, float speed);
+static uint8 test_read_keys(void);
+static void test_move_distance(float speed, float distance);
 
 //=================================================外部接口实现================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     电机基本功能测试
+// 函数简介     电机按键控制测试
 // 参数说明     void
 // 返回参数     void
-// 使用示例     test_motor_basic();
-// 备注信息     测试电机的基本功能：初始化、正转、反转、停止
+// 使用示例     test_motor_key_control();
+// 备注信息     简化的按键控制测试，支持不同速度和距离控制
 //-------------------------------------------------------------------------------------------------------------------
-void test_motor_basic(void)
+void test_motor_key_control(void)
 {
-    test_init_display();
-    test_display_info("Motor Basic Test", "Starting...");
+    uint8 key_pressed = 0;
     
-    // 初始化电机
-    if (motor_init() == MOTOR_STATUS_OK)
-    {
-        test_display_info("Motor Init", "OK");
-    }
-    else
-    {
-        test_display_info("Motor Init", "FAILED");
+    // 初始化硬件
+    printf("正在初始化硬件...\n");
+    
+    // 初始化按键
+    test_init_keys();
+    
+    // 初始化显示屏
+    ips114_init();
+    ips114_clear();
+    
+    // 初始化电机驱动
+    if (motor_init() != MOTOR_STATUS_OK) {
+        printf("错误：电机初始化失败\n");
         return;
     }
     
-    system_delay_ms(TEST_DELAY_SHORT);
+    // 初始化编码器
+    if (encoder_init() != ENCODER_STATUS_OK) {
+        printf("错误：编码器初始化失败\n");
+        return;
+    }
     
-    // 测试左电机正转
-    test_display_info("Left Motor", "Forward");
-    motor_set_direction(MOTOR_LEFT, MOTOR_FORWARD);
-    motor_set_speed(MOTOR_LEFT, TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
+    // 初始化PID控制系统
+    if (motor_pid_init() != MOTOR_PID_OK) {
+        printf("错误：PID控制系统初始化失败\n");
+        return;
+    }
     
-    // 测试左电机反转
-    test_display_info("Left Motor", "Backward");
-    motor_set_direction(MOTOR_LEFT, MOTOR_BACKWARD);
-    system_delay_ms(TEST_DELAY_MEDIUM);
+    printf("硬件初始化完成\n");
     
-    // 停止左电机
-    test_display_info("Left Motor", "Stop");
-    motor_stop(MOTOR_LEFT);
-    system_delay_ms(TEST_DELAY_SHORT);
+    // 显示主菜单
+    test_display_menu();
     
-    // 测试右电机正转
-    test_display_info("Right Motor", "Forward");
-    motor_set_direction(MOTOR_RIGHT, MOTOR_FORWARD);
-    motor_set_speed(MOTOR_RIGHT, TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 测试右电机反转
-    test_display_info("Right Motor", "Backward");
-    motor_set_direction(MOTOR_RIGHT, MOTOR_BACKWARD);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 停止右电机
-    test_display_info("Right Motor", "Stop");
-    motor_stop(MOTOR_RIGHT);
-    system_delay_ms(TEST_DELAY_SHORT);
-    
-    // 测试双电机同步
-    test_display_info("Both Motors", "Forward");
-    motor_set_speed(MOTOR_BOTH, TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    test_display_info("Both Motors", "Stop");
-    motor_stop(MOTOR_BOTH);
-    
-    test_display_info("Basic Test", "Complete");
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     电机速度测试
-// 参数说明     void
-// 返回参数     void
-// 使用示例     test_motor_speed();
-// 备注信息     测试电机的不同速度档位
-//-------------------------------------------------------------------------------------------------------------------
-void test_motor_speed(void)
-{
-    test_init_display();
-    test_display_info("Motor Speed Test", "Starting...");
-    
-    // 初始化电机
-    motor_init();
-    system_delay_ms(TEST_DELAY_SHORT);
-    
-    // 低速测试
-    test_display_info("Speed Test", "Low Speed");
-    motor_set_speed(MOTOR_BOTH, TEST_SPEED_LOW);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 中速测试
-    test_display_info("Speed Test", "Medium Speed");
-    motor_set_speed(MOTOR_BOTH, TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 高速测试
-    test_display_info("Speed Test", "High Speed");
-    motor_set_speed(MOTOR_BOTH, TEST_SPEED_HIGH);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 反向低速测试
-    test_display_info("Speed Test", "Reverse Low");
-    motor_set_speed(MOTOR_BOTH, -TEST_SPEED_LOW);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 反向高速测试
-    test_display_info("Speed Test", "Reverse High");
-    motor_set_speed(MOTOR_BOTH, -TEST_SPEED_HIGH);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 停止
-    test_display_info("Speed Test", "Stop");
-    motor_stop(MOTOR_BOTH);
-    
-    test_display_info("Speed Test", "Complete");
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     差速运动测试
-// 参数说明     void
-// 返回参数     void
-// 使用示例     test_motor_differential();
-// 备注信息     测试差速运动功能：直行、转弯、原地转向
-//-------------------------------------------------------------------------------------------------------------------
-void test_motor_differential(void)
-{
-    test_init_display();
-    test_display_info("Differential Test", "Starting...");
-    
-    // 初始化电机
-    motor_init();
-    system_delay_ms(TEST_DELAY_SHORT);
-    
-    // 直行测试
-    test_display_info("Differential", "Forward");
-    motor_differential_drive(TEST_SPEED_MEDIUM, 0);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 后退测试
-    test_display_info("Differential", "Backward");
-    motor_differential_drive(-TEST_SPEED_MEDIUM, 0);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 左转测试
-    test_display_info("Differential", "Turn Left");
-    motor_differential_drive(TEST_SPEED_LOW, TEST_SPEED_LOW);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 右转测试
-    test_display_info("Differential", "Turn Right");
-    motor_differential_drive(TEST_SPEED_LOW, -TEST_SPEED_LOW);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 原地左转
-    test_display_info("Differential", "Spin Left");
-    motor_differential_drive(0, TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 原地右转
-    test_display_info("Differential", "Spin Right");
-    motor_differential_drive(0, -TEST_SPEED_MEDIUM);
-    system_delay_ms(TEST_DELAY_MEDIUM);
-    
-    // 停止
-    test_display_info("Differential", "Stop");
-    motor_stop(MOTOR_BOTH);
-    
-    test_display_info("Differential", "Complete");
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     电机综合测试
-// 参数说明     void
-// 返回参数     void
-// 使用示例     test_motor();
-// 备注信息     综合测试所有电机功能，包括基本功能、速度控制和差速运动
-//-------------------------------------------------------------------------------------------------------------------
-void test_motor(void)
-{
-    test_init_display();
-    test_display_info("Motor Full Test", "Starting...");
-    
-    // 基本功能测试
-    test_display_info("Phase 1", "Basic Test");
-    test_motor_basic();
-    system_delay_ms(TEST_DELAY_LONG);
-    
-    // 速度控制测试
-    test_display_info("Phase 2", "Speed Test");
-    test_motor_speed();
-    system_delay_ms(TEST_DELAY_LONG);
-    
-    // 差速运动测试
-    test_display_info("Phase 3", "Diff Test");
-    test_motor_differential();
-    system_delay_ms(TEST_DELAY_LONG);
-    
-    test_display_info("Full Test", "Complete!");
-    
-    // 测试完成后保持显示
+    // 主控制循环
     while(1)
     {
-        system_delay_ms(1000);
+        // 读取按键
+        key_pressed = test_read_keys();
+        
+        switch(key_pressed)
+        {
+            case 1:  // KEY1 - 1m/s连续转动
+                test_display_status("连续转动", TEST_SPEED_LOW);
+                motor_set_target_speed(TEST_SPEED_LOW, TEST_SPEED_LOW);
+                break;
+                
+            case 2:  // KEY2 - 3.5m/s连续转动
+                test_display_status("连续转动", TEST_SPEED_HIGH);
+                motor_set_target_speed(TEST_SPEED_HIGH, TEST_SPEED_HIGH);
+                break;
+                
+            case 3:  // KEY3 - 1m/s前进一米
+                test_display_status("前进1米", TEST_SPEED_LOW);
+                test_move_distance(TEST_SPEED_LOW, TEST_DISTANCE);
+                break;
+                
+            case 4:  // KEY4 - 3.5m/s前进一米
+                test_display_status("前进1米", TEST_SPEED_HIGH);
+                test_move_distance(TEST_SPEED_HIGH, TEST_DISTANCE);
+                break;
+                
+            default:
+                // 无按键按下时停止电机
+                motor_set_target_speed(0.0f, 0.0f);
+                break;
+        }
+        
+        system_delay_ms(50);  // 50ms控制周期
     }
 }
 
 //=================================================内部函数实现================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     测试信息显示（内部函数）
-// 参数说明     test_name           测试项目名称
-// 参数说明     status              测试状态
-// 返回参数     void
-// 备注信息     在屏幕上显示测试信息
+// 函数简介     初始化按键GPIO
 //-------------------------------------------------------------------------------------------------------------------
-static void test_display_info(const char* test_name, const char* status)
+static void test_init_keys(void)
 {
-    char display_buffer[50];
-    static uint8 line_count = 0;
-    
-    // 格式化显示字符串
-    sprintf(display_buffer, "%s: %s", test_name, status);
-    
-    // 显示在屏幕上
-    ips114_show_string(0, line_count * 16, display_buffer);
-    
-    // 更新行计数，超过屏幕高度时清屏重新开始
-    line_count++;
-    if (line_count > 7)  // IPS114屏幕大约可显示8行
-    {
-        line_count = 0;
-        system_delay_ms(2000);  // 暂停2秒让用户看清信息
-        ips114_clear();
-    }
+    // 初始化按键为输入模式，上拉电阻
+    gpio_init(KEY1, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(KEY2, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(KEY3, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(KEY4, GPI, GPIO_HIGH, GPI_PULL_UP);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     测试显示初始化（内部函数）
-// 参数说明     void
-// 返回参数     void
-// 备注信息     初始化测试显示屏幕
+// 函数简介     显示主菜单
 //-------------------------------------------------------------------------------------------------------------------
-static void test_init_display(void)
+static void test_display_menu(void)
 {
-    // 初始化屏幕
-    ips114_set_dir(IPS114_PORTAIT);
-    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
-    ips114_init();
     ips114_clear();
+    
+    // 设置显示颜色为白色
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    
+    // 标题
+    ips114_show_string(10, 10, "电机测试系统");
+    ips114_show_string(10, 30, "==================");
+    
+    // 按键说明
+    ips114_show_string(10, 50, "KEY1: 1.0m/s 连续");
+    ips114_show_string(10, 70, "KEY2: 3.5m/s 连续");
+    ips114_show_string(10, 90, "KEY3: 1.0m/s 1米");
+    ips114_show_string(10, 110, "KEY4: 3.5m/s 1米");
+    
+    // 状态区域
+    ips114_show_string(10, 140, "状态: 等待按键");
+    ips114_show_string(10, 160, "速度: 0.0 m/s");
+    
+    printf("菜单显示完成\n");
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     显示当前状态
+//-------------------------------------------------------------------------------------------------------------------
+static void test_display_status(const char* action, float speed)
+{
+    char status_str[64];
+    char speed_str[32];
+    
+    // 设置显示颜色
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    
+    // 清除状态区域
+    ips114_show_string(10, 140, "                    ");
+    ips114_show_string(10, 160, "                    ");
+    
+    // 显示新状态
+    sprintf(status_str, "状态: %s", action);
+    sprintf(speed_str, "速度: %.1f m/s", speed);
+    
+    ips114_show_string(10, 140, status_str);
+    ips114_show_string(10, 160, speed_str);
+    
+    printf("%s - 速度: %.1f m/s\n", action, speed);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     读取按键状态
+// 返回参数     uint8   按键编号(1-4)，0表示无按键
+//-------------------------------------------------------------------------------------------------------------------
+static uint8 test_read_keys(void)
+{
+    static uint8 key_last_state[4] = {1, 1, 1, 1};  // 上次按键状态
+    uint8 key_current_state[4];
+    uint8 i;
+    
+    // 读取当前按键状态（低电平有效）
+    key_current_state[0] = gpio_get_level(KEY1);
+    key_current_state[1] = gpio_get_level(KEY2);
+    key_current_state[2] = gpio_get_level(KEY3);
+    key_current_state[3] = gpio_get_level(KEY4);
+    
+    // 检测按键按下（下降沿触发）
+    for(i = 0; i < 4; i++)
+    {
+        if(key_last_state[i] == 1 && key_current_state[i] == 0)
+        {
+            // 防抖延时
+            system_delay_ms(20);
+            
+            // 再次确认按键状态
+            switch(i)
+            {
+                case 0: if(gpio_get_level(KEY1) == 0) { key_last_state[i] = 0; return 1; } break;
+                case 1: if(gpio_get_level(KEY2) == 0) { key_last_state[i] = 0; return 2; } break;
+                case 2: if(gpio_get_level(KEY3) == 0) { key_last_state[i] = 0; return 3; } break;
+                case 3: if(gpio_get_level(KEY4) == 0) { key_last_state[i] = 0; return 4; } break;
+            }
+        }
+        key_last_state[i] = key_current_state[i];
+    }
+    
+    return 0;  // 无按键按下
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     按指定速度前进指定距离
+// 参数说明     speed       目标速度 (m/s)
+// 参数说明     distance    目标距离 (mm)
+//-------------------------------------------------------------------------------------------------------------------
+static void test_move_distance(float speed, float distance)
+{
+    float left_distance, right_distance;
+    float avg_distance;
+    char distance_str[32];
+    
+    // 重置编码器距离
+    encoder_reset(ENCODER_ID_BOTH);
+    
+    printf("开始前进 %.1f米，速度 %.1f m/s\n", distance/1000.0f, speed);
+    
+    // 开始移动
+    motor_set_target_speed(speed, speed);
+    
+    // 监控距离直到达到目标
+    while(1)
+    {
+        // 获取当前行驶距离
+        left_distance = encoder_get_distance(ENCODER_ID_LEFT);
+        right_distance = encoder_get_distance(ENCODER_ID_RIGHT);
+        avg_distance = (fabs(left_distance) + fabs(right_distance)) / 2.0f;
+        
+        // 显示当前距离
+        sprintf(distance_str, "距离: %.0f/%.0fmm", avg_distance, distance);
+        ips114_show_string(10, 180, "                    ");
+        ips114_show_string(10, 180, distance_str);
+        
+        // 检查是否达到目标距离
+        if(avg_distance >= distance)
+        {
+            break;
+        }
+        
+        system_delay_ms(50);
+    }
+    
+    // 停止电机
+    motor_set_target_speed(0.0f, 0.0f);
+    
+    // 显示完成状态
+    ips114_show_string(10, 140, "状态: 完成!");
+    ips114_show_string(10, 160, "速度: 0.0 m/s");
+    
+    printf("前进完成！实际距离: %.1fmm\n", avg_distance);
+    
+    // 等待一段时间显示结果
+    system_delay_ms(2000);
+    
+    // 清除距离显示
+    ips114_show_string(10, 180, "                    ");
+    
+    // 恢复菜单显示
+    ips114_show_string(10, 140, "状态: 等待按键");
 }

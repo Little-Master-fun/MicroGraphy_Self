@@ -44,14 +44,20 @@ static void display_test_info(const char* info);
 //-------------------------------------------------------------------------------------------------------------------
 void test_encoder_basic(void)
 {
+    // 初始化屏幕
+    ips114_set_dir(IPS114_PORTAIT);
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    ips114_init();
     ips114_clear();
+    
     ips114_show_string(0, 0, "Encoder Basic Test");
     ips114_show_string(0, 16, "Turn wheels manually");
+    ips114_show_string(0, 32, "Data:");
     
     // 初始化编码器
     if (encoder_init() != ENCODER_STATUS_OK)
     {
-        ips114_show_string(0, 32, "Init Failed!");
+        ips114_show_string(0, 48, "ERROR: Init Failed!");
         return;
     }
     
@@ -69,7 +75,7 @@ void test_encoder_basic(void)
         
         // 显示结果
         char info[50];
-        sprintf(info, "L:%ld R:%ld", left_pulse, right_pulse);
+        sprintf(info, "L:%d R:%d", (int)left_pulse, (int)right_pulse);
         display_test_info(info);
         
         system_delay_ms(100);
@@ -84,9 +90,13 @@ void test_encoder_basic(void)
 //-------------------------------------------------------------------------------------------------------------------
 void test_encoder_speed(void)
 {
+    ips114_set_dir(IPS114_PORTAIT);
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    ips114_init();
     ips114_clear();
     ips114_show_string(0, 0, "Speed Test");
     ips114_show_string(0, 16, "Rotate wheels fast");
+    ips114_show_string(0, 32, "Data:");
     
     uint32 test_duration = 0;
     while (test_duration < 15000)  // 测试15秒
@@ -118,9 +128,13 @@ void test_encoder_speed(void)
 //-------------------------------------------------------------------------------------------------------------------
 void test_encoder_distance(void)
 {
+    ips114_set_dir(IPS114_PORTAIT);
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    ips114_init();
     ips114_clear();
     ips114_show_string(0, 0, "Distance Test");
     ips114_show_string(0, 16, "Move robot forward");
+    ips114_show_string(0, 32, "Data:");
     
     // 重置编码器数据
     encoder_reset(ENCODER_ID_BOTH);
@@ -201,7 +215,7 @@ void test_encoder(void)
         
         // 显示数据
         char info[50];
-        sprintf(info, "Pulse L:%ld R:%ld", left_pulse, right_pulse);
+        sprintf(info, "Pulse L:%d R:%d", (int)left_pulse, (int)right_pulse);
         ips114_show_string(0, 32, info);
         
         sprintf(info, "Speed L:%.3f R:%.3f", left_speed, right_speed);
@@ -220,6 +234,104 @@ void test_encoder(void)
     }
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     编码器累计脉冲显示测试
+//-------------------------------------------------------------------------------------------------------------------
+void test_encoder_pulse_display(void)
+{
+    // 初始化屏幕
+    ips114_set_dir(IPS114_PORTAIT);
+    ips114_set_color(RGB565_WHITE, RGB565_BLACK);
+    ips114_init();
+    ips114_clear();
+    
+    // 显示标题
+    ips114_show_string(0, 0, "Encoder Monitor");
+    ips114_show_string(0, 16, "Turn wheels to test");
+    
+    // 初始化编码器
+    if (encoder_init() != ENCODER_STATUS_OK)
+    {
+        ips114_show_string(0, 32, "ERROR: Init Failed!");
+        return;
+    }
+    
+    ips114_show_string(0, 32, "Init Success");
+    system_delay_ms(1000);
+    
+    // 重置编码器累计脉冲
+    encoder_reset(ENCODER_ID_BOTH);
+    
+    uint32_t update_counter = 0;
+    int32_t last_left_total = 0;
+    int32_t last_right_total = 0;
+    
+    while(1)  // 无限循环显示
+    {
+        // 更新编码器数据
+        encoder_update();
+        
+        // 获取当前累计脉冲数
+        int32_t left_pulse = encoder_get_pulse_count(ENCODER_ID_LEFT);
+        int32_t right_pulse = encoder_get_pulse_count(ENCODER_ID_RIGHT);
+        
+        // 获取累计总脉冲数（带符号）
+        int32_t left_total = encoder_system.left.total_pulse;
+        int32_t right_total = encoder_system.right.total_pulse;
+        
+        // 显示实时数据
+        char display_buffer[64];
+        
+        // 当前周期脉冲（紧凑显示）
+        sprintf(display_buffer, "Now L:%6d R:%6d", (int)left_pulse, (int)right_pulse);
+        ips114_show_string(0, 48, display_buffer);
+        
+        // 累计脉冲总数（带变化指示，支持负数）
+        sprintf(display_buffer, "Tot L:%8d%s", (int)left_total, 
+                (left_total != last_left_total) ? "*" : " ");
+        ips114_show_string(0, 64, display_buffer);
+        
+        sprintf(display_buffer, "Tot R:%8d%s", (int)right_total,
+                (right_total != last_right_total) ? "*" : " ");
+        ips114_show_string(0, 80, display_buffer);
+        
+        // 显示编码器方向和计数（合并显示）
+        const char* left_dir = (encoder_system.left.direction == ENCODER_DIR_FORWARD) ? "F" :
+                              (encoder_system.left.direction == ENCODER_DIR_BACKWARD) ? "B" : "S";
+        const char* right_dir = (encoder_system.right.direction == ENCODER_DIR_FORWARD) ? "F" :
+                               (encoder_system.right.direction == ENCODER_DIR_BACKWARD) ? "B" : "S";
+        
+        sprintf(display_buffer, "Dir L:%s R:%s Cnt:%u", left_dir, right_dir, 
+                (unsigned int)update_counter % 1000);
+        ips114_show_string(0, 96, display_buffer);
+        
+        // 每100次更新显示一次统计信息
+        if (update_counter % 100 == 0) {
+            if (right_total != 0) {
+                sprintf(display_buffer, "L/R Ratio: %.2f", (float)left_total / right_total);
+            } else {
+                sprintf(display_buffer, "L/R Ratio: N/A");
+            }
+            ips114_show_string(0, 112, display_buffer);
+        }
+        
+        // 保存上次的值用于变化检测
+        last_left_total = left_total;
+        last_right_total = right_total;
+        
+        // 更新计数器
+        update_counter++;
+        
+        // 延时100ms，实现10Hz的显示刷新率
+        system_delay_ms(100);
+        
+        // 可以添加退出条件，比如按键检测
+        // if (gpio_get_level(EXIT_KEY_PIN) == 0) {
+        //     break;
+        // }
+    }
+}
+
 //=================================================内部函数实现================================================
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -227,15 +339,8 @@ void test_encoder(void)
 //-------------------------------------------------------------------------------------------------------------------
 static void display_test_info(const char* info)
 {
-    // 显示信息
-    ips114_show_string(0, line_count * 16, info);
-    
-    // 更新行计数，超过屏幕高度时清屏重新开始
-    line_count++;
-    if (line_count > 7)  // IPS114屏幕大约可显示8行
-    {
-        line_count = 0;
-        system_delay_ms(2000);  // 暂停2秒让用户看清信息
-        ips114_clear();
-    }
+    // 固定在第3行显示数据，覆盖刷新
+    char display_buffer[64];
+    sprintf(display_buffer, "%-30s", info); // 左对齐，30个字符宽度，用空格填充
+    ips114_show_string(0, 48, display_buffer);  // 固定在Y=48位置显示
 }

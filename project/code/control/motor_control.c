@@ -66,199 +66,12 @@ motor_pid_status_enum motor_pid_init(void)
     return MOTOR_PID_OK;
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     左电机速度闭环控制
-//-------------------------------------------------------------------------------------------------------------------
-float motor_left_speed_control(float target_speed, float current_speed)
-{
-    if (!motor_control_system.system_enabled) {
-        return 0.0f;
-    }
-    
-    // 更新系统状态
-    motor_control_system.left_target_speed = target_speed;
-    motor_control_system.left_current_speed = current_speed;
-    
-    // 计算PID输出
-    float output = motor_pid_calculate(&motor_control_system.left_pid, target_speed, current_speed);
-    
-    // 保存输出值
-    motor_control_system.left_output = output;
-    
-    return output;
-}
+
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     右电机速度闭环控制
+// 函数简介     设置电机目标速度
 //-------------------------------------------------------------------------------------------------------------------
-float motor_right_speed_control(float target_speed, float current_speed)
-{
-    if (!motor_control_system.system_enabled) {
-        return 0.0f;
-    }
-    
-    // 更新系统状态
-    motor_control_system.right_target_speed = target_speed;
-    motor_control_system.right_current_speed = current_speed;
-    
-    // 计算PID输出
-    float output = motor_pid_calculate(&motor_control_system.right_pid, target_speed, current_speed);
-    
-    // 保存输出值
-    motor_control_system.right_output = output;
-    
-    return output;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     双电机差速闭环控制
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_differential_speed_control(float left_target, float right_target,
-                                                      float left_current, float right_current,
-                                                      float *left_output, float *right_output)
-{
-    if (!motor_control_system.system_enabled) {
-        if (left_output != NULL) *left_output = 0.0f;
-        if (right_output != NULL) *right_output = 0.0f;
-        return MOTOR_PID_NOT_INIT;
-    }
-    
-    // 计算左电机输出
-    if (left_output != NULL) {
-        *left_output = motor_left_speed_control(left_target, left_current);
-    }
-    
-    // 计算右电机输出
-    if (right_output != NULL) {
-        *right_output = motor_right_speed_control(right_target, right_current);
-    }
-    
-    // 更新总计数
-    motor_control_system.total_update_count++;
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     重置PID控制器
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_reset(motor_pid_id_enum motor_id)
-{
-    if (motor_id == MOTOR_PID_LEFT || motor_id == MOTOR_PID_BOTH) {
-        motor_control_system.left_pid.integral = 0.0f;
-        motor_control_system.left_pid.last_error = 0.0f;
-        motor_control_system.left_pid.update_count = 0;
-        motor_control_system.left_pid.max_error = 0.0f;
-        motor_control_system.left_pid.average_error = 0.0f;
-    }
-    
-    if (motor_id == MOTOR_PID_RIGHT || motor_id == MOTOR_PID_BOTH) {
-        motor_control_system.right_pid.integral = 0.0f;
-        motor_control_system.right_pid.last_error = 0.0f;
-        motor_control_system.right_pid.update_count = 0;
-        motor_control_system.right_pid.max_error = 0.0f;
-        motor_control_system.right_pid.average_error = 0.0f;
-    }
-    
-    printf("电机PID控制器已重置 (ID: %d)\n", motor_id);
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     设置PID参数
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_set_params(motor_pid_id_enum motor_id, float kp, float ki, float kd)
-{
-    if (motor_id == MOTOR_PID_LEFT || motor_id == MOTOR_PID_BOTH) {
-        motor_control_system.left_pid.kp = kp;
-        motor_control_system.left_pid.ki = ki;
-        motor_control_system.left_pid.kd = kd;
-    }
-    
-    if (motor_id == MOTOR_PID_RIGHT || motor_id == MOTOR_PID_BOTH) {
-        motor_control_system.right_pid.kp = kp;
-        motor_control_system.right_pid.ki = ki;
-        motor_control_system.right_pid.kd = kd;
-    }
-    
-    printf("电机PID参数已更新 (ID: %d) - Kp:%.1f Ki:%.1f Kd:%.1f\n", 
-           motor_id, kp, ki, kd);
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     获取PID控制器状态
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_get_status(motor_pid_id_enum motor_id, float *kp, float *ki, float *kd, 
-                                          float *integral, float *last_error)
-{
-    motor_pid_controller_t *pid = NULL;
-    
-    if (motor_id == MOTOR_PID_LEFT) {
-        pid = &motor_control_system.left_pid;
-    } else if (motor_id == MOTOR_PID_RIGHT) {
-        pid = &motor_control_system.right_pid;
-    } else {
-        return MOTOR_PID_ERROR;
-    }
-    
-    if (!pid->initialized) {
-        return MOTOR_PID_NOT_INIT;
-    }
-    
-    if (kp != NULL) *kp = pid->kp;
-    if (ki != NULL) *ki = pid->ki;
-    if (kd != NULL) *kd = pid->kd;
-    if (integral != NULL) *integral = pid->integral;
-    if (last_error != NULL) *last_error = pid->last_error;
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     使能/禁用电机控制系统
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_enable(uint8 enable)
-{
-    motor_control_system.system_enabled = enable;
-    
-    if (!enable) {
-        // 禁用时清零所有输出
-        motor_control_system.left_output = 0.0f;
-        motor_control_system.right_output = 0.0f;
-        
-        // 停止电机
-        motor_stop(MOTOR_BOTH);
-        
-        printf("电机控制系统已禁用\n");
-    } else {
-        printf("电机控制系统已使能\n");
-    }
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     获取电机控制系统状态
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_get_system_status(motor_control_system_t *system_info)
-{
-    if (system_info == NULL) {
-        return MOTOR_PID_ERROR;
-    }
-    
-    // 复制整个系统状态
-    memcpy(system_info, &motor_control_system, sizeof(motor_control_system_t));
-    
-    return MOTOR_PID_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     电机控制系统主更新函数
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_update(float left_target, float right_target)
+motor_pid_status_enum motor_set_target_speed(float left_speed, float right_speed)
 {
     if (!motor_control_system.system_enabled) {
         return MOTOR_PID_NOT_INIT;
@@ -271,22 +84,35 @@ motor_pid_status_enum motor_control_update(float left_target, float right_target
     float left_current = encoder_get_speed(ENCODER_ID_LEFT);
     float right_current = encoder_get_speed(ENCODER_ID_RIGHT);
     
-    // 执行PID控制
-    float left_output, right_output;
-    motor_pid_status_enum status = motor_differential_speed_control(
-        left_target, right_target,
-        left_current, right_current,
-        &left_output, &right_output
-    );
+    // 更新系统状态
+    motor_control_system.left_target_speed = left_speed;
+    motor_control_system.left_current_speed = left_current;
+    motor_control_system.right_target_speed = right_speed;
+    motor_control_system.right_current_speed = right_current;
     
-    if (status == MOTOR_PID_OK) {
-        // 输出到电机
-        motor_set_speed(MOTOR_LEFT, (int16)left_output);
-        motor_set_speed(MOTOR_RIGHT, (int16)right_output);
-    }
+    // 计算PID输出
+    float left_output = motor_pid_calculate(&motor_control_system.left_pid, left_speed, left_current);
+    float right_output = motor_pid_calculate(&motor_control_system.right_pid, right_speed, right_current);
     
-    return status;
+    // 更新输出值
+    motor_control_system.left_output = left_output;
+    motor_control_system.right_output = right_output;
+    
+    // 输出到电机
+    motor_set_pwm(MOTOR_LEFT, (int16)left_output);
+    motor_set_pwm(MOTOR_RIGHT, (int16)right_output);
+    
+    // 统计计数
+    motor_control_system.total_update_count++;
+    
+    return MOTOR_PID_OK;
 }
+
+
+
+
+
+
 
 //=================================================内部函数实现================================================
 

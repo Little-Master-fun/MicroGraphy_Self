@@ -103,101 +103,13 @@ extern motor_control_system_t motor_control_system;
 motor_pid_status_enum motor_pid_init(void);
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     左电机速度闭环控制
-// 参数说明     target_speed        目标速度 (m/s)
-// 参数说明     current_speed       当前速度 (m/s)
-// 返回参数     float               控制输出 (PWM值 -9999~9999)
-// 使用示例     pwm = motor_left_speed_control(1.5f, actual_speed);
-// 备注信息     左电机速度PID闭环控制
-//-------------------------------------------------------------------------------------------------------------------
-float motor_left_speed_control(float target_speed, float current_speed);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     右电机速度闭环控制
-// 参数说明     target_speed        目标速度 (m/s)
-// 参数说明     current_speed       当前速度 (m/s)
-// 返回参数     float               控制输出 (PWM值 -9999~9999)
-// 使用示例     pwm = motor_right_speed_control(1.5f, actual_speed);
-// 备注信息     右电机速度PID闭环控制
-//-------------------------------------------------------------------------------------------------------------------
-float motor_right_speed_control(float target_speed, float current_speed);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     双电机差速闭环控制
-// 参数说明     left_target         左电机目标速度 (m/s)
-// 参数说明     right_target        右电机目标速度 (m/s)
-// 参数说明     left_current        左电机当前速度 (m/s)
-// 参数说明     right_current       右电机当前速度 (m/s)
-// 参数说明     left_output         左电机输出指针
-// 参数说明     right_output        右电机输出指针
+// 函数简介     设置电机目标速度
+// 参数说明     left_speed          左电机目标速度 (m/s)
+// 参数说明     right_speed         右电机目标速度 (m/s)
 // 返回参数     motor_pid_status_enum   执行状态
-// 使用示例     motor_differential_speed_control(1.0f, 1.2f, act_l, act_r, &pwm_l, &pwm_r);
-// 备注信息     双电机差速PID闭环控制
+// 使用示例     motor_set_target_speed(1.0f, 1.0f);
+// 备注信息     集成PID控制和电机输出的完整控制接口
 //-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_differential_speed_control(float left_target, float right_target,
-                                                      float left_current, float right_current,
-                                                      float *left_output, float *right_output);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     重置PID控制器
-// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/RIGHT/BOTH)
-// 返回参数     motor_pid_status_enum   重置状态
-// 使用示例     motor_pid_reset(MOTOR_PID_BOTH);
-// 备注信息     清除PID积分和历史误差，用于控制器重启
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_reset(motor_pid_id_enum motor_id);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     设置PID参数
-// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/RIGHT/BOTH)
-// 参数说明     kp                  比例系数
-// 参数说明     ki                  积分系数
-// 参数说明     kd                  微分系数
-// 返回参数     motor_pid_status_enum   设置状态
-// 使用示例     motor_pid_set_params(MOTOR_PID_BOTH, 45.0f, 3.0f, 0.0f);
-// 备注信息     动态调整PID参数
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_set_params(motor_pid_id_enum motor_id, float kp, float ki, float kd);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     获取PID控制器状态
-// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/RIGHT)
-// 参数说明     kp, ki, kd          PID参数输出指针
-// 参数说明     integral            积分值输出指针
-// 参数说明     last_error          上次误差输出指针
-// 返回参数     motor_pid_status_enum   获取状态
-// 使用示例     motor_pid_get_status(MOTOR_PID_LEFT, &kp, &ki, &kd, &integral, &error);
-// 备注信息     获取PID控制器的当前状态信息
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_pid_get_status(motor_pid_id_enum motor_id, float *kp, float *ki, float *kd, 
-                                          float *integral, float *last_error);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     使能/禁用电机控制系统
-// 参数说明     enable              使能标志 (1=使能, 0=禁用)
-// 返回参数     motor_pid_status_enum   设置状态
-// 使用示例     motor_control_enable(1);
-// 备注信息     禁用时所有输出清零
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_enable(uint8 enable);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     获取电机控制系统状态
-// 参数说明     system_info         系统状态输出指针
-// 返回参数     motor_pid_status_enum   获取状态
-// 使用示例     motor_control_get_system_status(&info);
-// 备注信息     获取整个电机控制系统的状态信息
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_get_system_status(motor_control_system_t *system_info);
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     电机控制系统主更新函数
-// 参数说明     left_target         左电机目标速度
-// 参数说明     right_target        右电机目标速度
-// 返回参数     motor_pid_status_enum   更新状态
-// 使用示例     motor_control_update(1.0f, 1.0f);
-// 备注信息     集成编码器读取、PID计算、电机输出的完整控制循环
-//-------------------------------------------------------------------------------------------------------------------
-motor_pid_status_enum motor_control_update(float left_target, float right_target);
+motor_pid_status_enum motor_set_target_speed(float left_speed, float right_speed);
 
 #endif // _MOTOR_CONTROL_H_

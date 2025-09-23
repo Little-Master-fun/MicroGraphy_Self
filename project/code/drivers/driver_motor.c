@@ -15,8 +15,7 @@
 #include "driver_motor.h"
 #include "zf_common_headfile.h"
 
-//=================================================内部函数声明================================================
-static motor_status_enum motor_set_pwm_single(motor_id_enum motor_id, int16 pwm_value);
+
 
 //=================================================外部接口实现================================================
 
@@ -37,19 +36,25 @@ motor_status_enum motor_init(void)
     pwm_init(MOTOR_RIGHT_PWM1, MOTOR_PWM_FREQUENCY, MOTOR_PWM_INIT_DUTY);
     pwm_init(MOTOR_RIGHT_PWM2, MOTOR_PWM_FREQUENCY, MOTOR_PWM_INIT_DUTY);
     
-    // 初始化左电机方向控制GPIO
-    gpio_init(MOTOR_LEFT_IN1, GPO, GPIO_LOW, GPO_PUSH_PULL);
-    gpio_init(MOTOR_LEFT_IN2, GPO, GPIO_LOW, GPO_PUSH_PULL);
+    // // 初始化左电机方向控制GPIO
+    // gpio_init(MOTOR_LEFT_IN1, GPO, GPIO_LOW, GPO_PUSH_PULL);
+    // gpio_init(MOTOR_LEFT_IN2, GPO, GPIO_LOW, GPO_PUSH_PULL);
     
-    // 初始化右电机方向控制GPIO
-    gpio_init(MOTOR_RIGHT_IN1, GPO, GPIO_LOW, GPO_PUSH_PULL);
-    gpio_init(MOTOR_RIGHT_IN2, GPO, GPIO_LOW, GPO_PUSH_PULL);
+    // // 初始化右电机方向控制GPIO
+    // gpio_init(MOTOR_RIGHT_IN1, GPO, GPIO_LOW, GPO_PUSH_PULL);
+    // gpio_init(MOTOR_RIGHT_IN2, GPO, GPIO_LOW, GPO_PUSH_PULL);
     
-    // 确保电机初始状态为停止
+    // 确保电机初始状态为停止 - TB67H420FTG停止模式
     pwm_set_duty(MOTOR_LEFT_PWM1, 0);
     pwm_set_duty(MOTOR_LEFT_PWM2, 0);
     pwm_set_duty(MOTOR_RIGHT_PWM1, 0);
     pwm_set_duty(MOTOR_RIGHT_PWM2, 0);
+    
+    // // TB67H420FTG: 停止状态设置所有方向引脚为低电平
+    // gpio_set_level(MOTOR_LEFT_IN1, GPIO_LOW);
+    // gpio_set_level(MOTOR_LEFT_IN2, GPIO_LOW);
+    // gpio_set_level(MOTOR_RIGHT_IN1, GPIO_LOW);
+    // gpio_set_level(MOTOR_RIGHT_IN2, GPIO_LOW);
     
     return MOTOR_STATUS_OK;
 }
@@ -115,51 +120,64 @@ motor_status_enum motor_set_pwm(motor_id_enum motor_id, int16 pwm_value)
         return status;
     }
     
-    // 获取PWM绝对值和方向
+    // TB67H420FTG控制逻辑：先判断是否停止，再设置方向
     int16 abs_pwm = (protected_pwm >= 0) ? protected_pwm : -protected_pwm;
     uint8 is_forward = (protected_pwm >= 0) ? 1 : 0;
     
-    // 设置单个电机PWM
+    // 设置左电机
     if (motor_id == MOTOR_LEFT)
     {
-        if (is_forward)
+        if (abs_pwm == 0)
         {
-            // 正转：PWM1输出，PWM2为0
-            pwm_set_duty(MOTOR_LEFT_PWM1, abs_pwm);
-            pwm_set_duty(MOTOR_LEFT_PWM2, 0);
-            // 设置方向控制引脚
-            gpio_set_level(MOTOR_LEFT_IN1, GPIO_LOW);
-            gpio_set_level(MOTOR_LEFT_IN2, GPIO_HIGH);
+            // 停止模式：TB67H420FTG IN1=L, IN2=L, PWM=0
+            pwm_set_duty(MOTOR_LEFT_PWM1, 0);
+            pwm_set_duty(MOTOR_LEFT_PWM2, 0);  // 清零所有PWM通道
+            // gpio_set_level(MOTOR_LEFT_IN1, GPIO_LOW);
+            // gpio_set_level(MOTOR_LEFT_IN2, GPIO_LOW);
+        }
+        else if (is_forward)
+        {
+            // 正转：TB67H420FTG IN1=H, IN2=L, PWM=速度
+            pwm_set_duty(MOTOR_LEFT_PWM1, abs_pwm);  // 主PWM通道
+            pwm_set_duty(MOTOR_LEFT_PWM2, 0);        // 备用通道设为0
+            // gpio_set_level(MOTOR_LEFT_IN1, GPIO_HIGH);
+            // gpio_set_level(MOTOR_LEFT_IN2, GPIO_LOW);
         }
         else
         {
-            // 反转：PWM1为0，PWM2输出
-            pwm_set_duty(MOTOR_LEFT_PWM1, 0);
-            pwm_set_duty(MOTOR_LEFT_PWM2, abs_pwm);
-            // 设置方向控制引脚
-            gpio_set_level(MOTOR_LEFT_IN1, GPIO_HIGH);
-            gpio_set_level(MOTOR_LEFT_IN2, GPIO_LOW);
+            // 反转：TB67H420FTG IN1=L, IN2=H, PWM=速度
+            pwm_set_duty(MOTOR_LEFT_PWM1, abs_pwm);  // 主PWM通道
+            pwm_set_duty(MOTOR_LEFT_PWM2, 0);        // 备用通道设为0
+            // gpio_set_level(MOTOR_LEFT_IN1, GPIO_LOW);
+            // gpio_set_level(MOTOR_LEFT_IN2, GPIO_HIGH);
         }
     }
+    // 设置右电机  
     else if (motor_id == MOTOR_RIGHT)
     {
-        if (is_forward)
+        if (abs_pwm == 0)
         {
-            // 正转：PWM1输出，PWM2为0
-            pwm_set_duty(MOTOR_RIGHT_PWM1, abs_pwm);
-            pwm_set_duty(MOTOR_RIGHT_PWM2, 0);
-            // 设置方向控制引脚
-            gpio_set_level(MOTOR_RIGHT_IN1, GPIO_HIGH);
-            gpio_set_level(MOTOR_RIGHT_IN2, GPIO_LOW);
+            // 停止模式：TB67H420FTG IN1=L, IN2=L, PWM=0
+            pwm_set_duty(MOTOR_RIGHT_PWM1, 0);
+            pwm_set_duty(MOTOR_RIGHT_PWM2, 0);  // 清零所有PWM通道
+            // gpio_set_level(MOTOR_RIGHT_IN1, GPIO_LOW);
+            // gpio_set_level(MOTOR_RIGHT_IN2, GPIO_LOW);
+        }
+        else if (is_forward)
+        {
+            // 正转：TB67H420FTG IN1=H, IN2=L, PWM=速度
+            pwm_set_duty(MOTOR_RIGHT_PWM1, abs_pwm);  // 主PWM通道
+            pwm_set_duty(MOTOR_RIGHT_PWM2, 0);        // 备用通道设为0
+            // gpio_set_level(MOTOR_RIGHT_IN1, GPIO_HIGH);
+            // gpio_set_level(MOTOR_RIGHT_IN2, GPIO_LOW);
         }
         else
         {
-            // 反转：PWM1为0，PWM2输出
-            pwm_set_duty(MOTOR_RIGHT_PWM1, 0);
-            pwm_set_duty(MOTOR_RIGHT_PWM2, abs_pwm);
-            // 设置方向控制引脚
-            gpio_set_level(MOTOR_RIGHT_IN1, GPIO_LOW);
-            gpio_set_level(MOTOR_RIGHT_IN2, GPIO_HIGH);
+            // 反转：TB67H420FTG IN1=L, IN2=H, PWM=速度
+            pwm_set_duty(MOTOR_RIGHT_PWM1, abs_pwm);  // 主PWM通道
+            pwm_set_duty(MOTOR_RIGHT_PWM2, 0);        // 备用通道设为0
+            // gpio_set_level(MOTOR_RIGHT_IN1, GPIO_LOW);
+            // gpio_set_level(MOTOR_RIGHT_IN2, GPIO_HIGH);
         }
     }
     else

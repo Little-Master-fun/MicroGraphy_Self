@@ -2,11 +2,12 @@
 * 文件名称          test_motor.c
 * 功能说明          电机驱动测试程序（简化版）
 * 作者              LittleMaster
-* 版本信息          v2.0
+* 版本信息          v3.0
 * 修改记录
 * 日期              作者                版本              备注
 * 2025-09-17        LittleMaster       1.0v              创建基础电机测试功能
 * 2025-09-22        LittleMaster       2.0v              简化为按键控制测试系统
+* 2025-09-22        LittleMaster       3.0v              修复IPS114显示断言错误
 * 
 * 文件作用说明：
 * 本文件为电机驱动的简化测试程序，提供按键控制的电机测试功能
@@ -17,8 +18,14 @@
 * - KEY3(P01_0): 以1m/s前进一米后停下
 * - KEY4(P01_1): 以3.5m/s前进一米后停下
 * 
+* IPS114显示安全区域 (240×135像素，8×16字体)：
+* - 标题区域：y=0-16    - "Motor Test"
+* - 菜单区域：y=32-80   - 按键说明  
+* - 状态区域：y=96-112  - 实时状态显示
+* - 最大安全y坐标：119 (135-16=119，避免断言错误)
+* 
 * 使用的优化驱动：
-* - driver_motor.c (简化版)
+* - driver_motor.c (TB67H420FTG驱动器)
 * - driver_encoder.c (简化版) 
 * - motor_control.c (简化版PID控制)
 ********************************************************************************************************************/
@@ -105,22 +112,22 @@ void test_motor_key_control(void)
         switch(key_pressed)
         {
             case 1:  // KEY1 - 1m/s连续转动
-                test_display_status("连续转动", TEST_SPEED_LOW);
+                test_display_status("Move", TEST_SPEED_LOW);
                 motor_set_target_speed(TEST_SPEED_LOW, TEST_SPEED_LOW);
                 break;
                 
             case 2:  // KEY2 - 3.5m/s连续转动
-                test_display_status("连续转动", TEST_SPEED_HIGH);
+                test_display_status("Move", TEST_SPEED_HIGH);
                 motor_set_target_speed(TEST_SPEED_HIGH, TEST_SPEED_HIGH);
                 break;
                 
             case 3:  // KEY3 - 1m/s前进一米
-                test_display_status("前进1米", TEST_SPEED_LOW);
-                test_move_distance(TEST_SPEED_LOW, TEST_DISTANCE);
+                test_display_status("Move1m", TEST_SPEED_LOW);
+                test_move_distance(1.0f, TEST_DISTANCE);
                 break;
                 
             case 4:  // KEY4 - 3.5m/s前进一米
-                test_display_status("前进1米", TEST_SPEED_HIGH);
+                test_display_status("Move1m", TEST_SPEED_HIGH);
                 test_move_distance(TEST_SPEED_HIGH, TEST_DISTANCE);
                 break;
                 
@@ -155,24 +162,24 @@ static void test_display_menu(void)
 {
     ips114_clear();
     
-    // 设置显示颜色为白色
+    // 设置显示颜色为白色 (黑色背景白色字)
     ips114_set_color(RGB565_WHITE, RGB565_BLACK);
     
-    // 标题
-    ips114_show_string(10, 10, "电机测试系统");
-    ips114_show_string(10, 30, "==================");
+    // 标题 - 使用英文
+    ips114_show_string(5, 0, "Motor Test");
+    ips114_show_string(5, 16, "==========");
     
-    // 按键说明
-    ips114_show_string(10, 50, "KEY1: 1.0m/s 连续");
-    ips114_show_string(10, 70, "KEY2: 3.5m/s 连续");
-    ips114_show_string(10, 90, "KEY3: 1.0m/s 1米");
-    ips114_show_string(10, 110, "KEY4: 3.5m/s 1米");
+    // 按键说明 - 英文简写，坐标在安全范围内
+    ips114_show_string(5, 32, "KEY1: 1.0m/s Cont");
+    ips114_show_string(5, 48, "KEY2: 3.5m/s Cont");
+    ips114_show_string(5, 64, "KEY3: 1.0m/s 1m");
+    ips114_show_string(5, 80, "KEY4: 3.5m/s 1m");
     
-    // 状态区域
-    ips114_show_string(10, 140, "状态: 等待按键");
-    ips114_show_string(10, 160, "速度: 0.0 m/s");
+    // 状态区域 - 在安全坐标范围内 (y < 135)
+    ips114_show_string(5, 96, "Status: Wait Key");
+    ips114_show_string(5, 112, "Speed: 0.0 m/s");
     
-    printf("菜单显示完成\n");
+    printf("Menu display complete\n");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -180,24 +187,24 @@ static void test_display_menu(void)
 //-------------------------------------------------------------------------------------------------------------------
 static void test_display_status(const char* action, float speed)
 {
-    char status_str[64];
-    char speed_str[32];
+    char status_str[20];
+    char speed_str[20];
     
-    // 设置显示颜色
+    // 设置显示颜色 (黑色背景白色字)
     ips114_set_color(RGB565_WHITE, RGB565_BLACK);
     
-    // 清除状态区域
-    ips114_show_string(10, 140, "                    ");
-    ips114_show_string(10, 160, "                    ");
+    // 清空状态区域 - 使用安全坐标
+    ips114_show_string(5, 96, "               ");
+    ips114_show_string(5, 112, "               ");
     
-    // 显示新状态
-    sprintf(status_str, "状态: %s", action);
-    sprintf(speed_str, "速度: %.1f m/s", speed);
+    // 显示新状态 - 英文简写
+    sprintf(status_str, "St: %s", action);
+    sprintf(speed_str, "Spd: %.1f m/s", speed);
     
-    ips114_show_string(10, 140, status_str);
-    ips114_show_string(10, 160, speed_str);
+    ips114_show_string(5, 96, status_str);
+    ips114_show_string(5, 112, speed_str);
     
-    printf("%s - 速度: %.1f m/s\n", action, speed);
+    printf("Status: %s - Speed: %.1f m/s\n", action, speed);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -266,10 +273,10 @@ static void test_move_distance(float speed, float distance)
         right_distance = encoder_get_distance(ENCODER_ID_RIGHT);
         avg_distance = (fabs(left_distance) + fabs(right_distance)) / 2.0f;
         
-        // 显示当前距离
-        sprintf(distance_str, "距离: %.0f/%.0fmm", avg_distance, distance);
-        ips114_show_string(10, 180, "                    ");
-        ips114_show_string(10, 180, distance_str);
+        // 显示当前距离 - 使用安全坐标和英文 (y=119安全范围)
+        sprintf(distance_str, "D:%.0f/%.0fmm", avg_distance, distance);
+        ips114_show_string(5, 112, "               "); // 重用speed显示行
+        ips114_show_string(5, 112, distance_str);
         
         // 检查是否达到目标距离
         if(avg_distance >= distance)
@@ -283,18 +290,18 @@ static void test_move_distance(float speed, float distance)
     // 停止电机
     motor_set_target_speed(0.0f, 0.0f);
     
-    // 显示完成状态
-    ips114_show_string(10, 140, "状态: 完成!");
-    ips114_show_string(10, 160, "速度: 0.0 m/s");
+    // 显示完成状态 - 英文
+    ips114_show_string(5, 96, "St: Done!     ");
+    ips114_show_string(5, 112, "Spd: 0.0 m/s  ");
     
     printf("前进完成！实际距离: %.1fmm\n", avg_distance);
     
     // 等待一段时间显示结果
     system_delay_ms(2000);
     
-    // 清除距离显示
-    ips114_show_string(10, 180, "                    ");
+    // 清除距离显示 - 恢复speed行
+    ips114_show_string(5, 112, "Spd: 0.0 m/s  ");
     
-    // 恢复菜单显示
-    ips114_show_string(10, 140, "状态: 等待按键");
+    // 恢复菜单显示 - 英文
+    ips114_show_string(5, 96, "Status: Wait Key");
 }

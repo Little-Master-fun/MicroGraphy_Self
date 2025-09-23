@@ -45,6 +45,25 @@ encoder_status_enum encoder_init(void)
 
 
 //-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取编码器脉冲计数
+//-------------------------------------------------------------------------------------------------------------------
+int32 encoder_get_pulse(encoder_id_enum encoder_id)
+{
+    if (encoder_id == ENCODER_ID_LEFT)
+    {
+        return encoder_system.left.pulse_count;
+    }
+    else if (encoder_id == ENCODER_ID_RIGHT)
+    {
+        return encoder_system.right.pulse_count;
+    }
+    else
+    {
+        return 0;  // 错误情况返回0
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 // 函数简介     编码器数据更新（周期调用）
 //-------------------------------------------------------------------------------------------------------------------
 encoder_status_enum encoder_update(void)
@@ -72,7 +91,7 @@ static encoder_status_enum encoder_read_single(encoder_id_enum encoder_id)
     if (encoder_id == ENCODER_ID_LEFT)
     {
         encoder_data = &encoder_system.left;
-        raw_count = encoder_get_count(ENCODER_LEFT);
+        raw_count = -encoder_get_count(ENCODER_LEFT);
         encoder_clear_count(ENCODER_LEFT);
     }
     else if (encoder_id == ENCODER_ID_RIGHT)

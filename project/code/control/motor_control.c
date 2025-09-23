@@ -69,9 +69,25 @@ motor_pid_status_enum motor_pid_init(void)
 
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     设置电机目标速度
+// 函数简介     设置电机目标速度（仅设置目标，不进行控制计算）
 //-------------------------------------------------------------------------------------------------------------------
 motor_pid_status_enum motor_set_target_speed(float left_speed, float right_speed)
+{
+    if (!motor_control_system.system_enabled) {
+        return MOTOR_PID_NOT_INIT;
+    }
+    
+    // 只负责设置目标速度
+    motor_control_system.left_target_speed = left_speed;
+    motor_control_system.right_target_speed = right_speed;
+    
+    return MOTOR_PID_OK;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     电机控制更新函数（在定时中断中调用，如10ms中断）
+//-------------------------------------------------------------------------------------------------------------------
+motor_pid_status_enum motor_control_update(void)
 {
     if (!motor_control_system.system_enabled) {
         return MOTOR_PID_NOT_INIT;
@@ -85,20 +101,22 @@ motor_pid_status_enum motor_set_target_speed(float left_speed, float right_speed
     float right_current = encoder_get_speed(ENCODER_ID_RIGHT);
     
     // 更新系统状态
-    motor_control_system.left_target_speed = left_speed;
     motor_control_system.left_current_speed = left_current;
-    motor_control_system.right_target_speed = right_speed;
     motor_control_system.right_current_speed = right_current;
     
     // 计算PID输出
-    float left_output = motor_pid_calculate(&motor_control_system.left_pid, left_speed, left_current);
-    float right_output = motor_pid_calculate(&motor_control_system.right_pid, right_speed, right_current);
+    float left_output = motor_pid_calculate(&motor_control_system.left_pid, 
+                                          motor_control_system.left_target_speed, 
+                                          left_current);
+    float right_output = motor_pid_calculate(&motor_control_system.right_pid, 
+                                           motor_control_system.right_target_speed, 
+                                           right_current);
     
     // 更新输出值
     motor_control_system.left_output = left_output;
     motor_control_system.right_output = right_output;
     
-    // 输出到电机
+    // 输出PWM到电机
     motor_set_pwm(MOTOR_LEFT, (int16)left_output);
     motor_set_pwm(MOTOR_RIGHT, (int16)right_output);
     

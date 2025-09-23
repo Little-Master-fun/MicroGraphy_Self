@@ -34,8 +34,9 @@
 ********************************************************************************************************************/
 
 #include "zf_common_headfile.h"
-#include "test_nav.h"
+
 #include "test_motor.h"
+#include "test_encoder.h"
 
 #include "driver_motor.h"
 #include "motor_control.h"
@@ -60,6 +61,8 @@ int main(void)
     // 延时等待系统稳定
     system_delay_ms(500);
     
+    test_motor_key_control();
+    //test_encoder_simple();
 
     
 

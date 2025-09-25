@@ -71,7 +71,7 @@ void test_encoder_simple(void)
     while(1)
     {
         // 更新编码器数据
-        encoder_update();
+        //encoder_update();
         
         // 获取数据
         float left_speed = encoder_get_speed(ENCODER_ID_LEFT);

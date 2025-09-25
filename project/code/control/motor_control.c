@@ -59,9 +59,16 @@ motor_pid_status_enum motor_pid_init(void)
     motor_control_system.control_frequency = 100.0f;  // 默认100Hz
     motor_control_system.total_update_count = 0;
     
-    printf("电机PID闭环控制系统初始化完成\n");
-    printf("参数配置: Kp=%.1f Ki=%.1f Kd=%.1f\n", 
-           MOTOR_PID_KP_DEFAULT, MOTOR_PID_KI_DEFAULT, MOTOR_PID_KD_DEFAULT);
+    // 初始化PWM记录相关变量
+    motor_control_system.left_pwm_record_count = 0;
+    motor_control_system.right_pwm_record_count = 0;
+    motor_control_system.pwm_record_enabled = 0;
+    memset(motor_control_system.left_pwm_record, 0, sizeof(motor_control_system.left_pwm_record));
+    memset(motor_control_system.right_pwm_record, 0, sizeof(motor_control_system.right_pwm_record));
+    
+    printf("电机增量式PI闭环控制系统初始化完成\n");
+    printf("增量式PI参数: Kp=%.1f Ki=%.1f 输出限幅=%.1f\n", 
+           MOTOR_PI_KP_DEFAULT, MOTOR_PI_KI_DEFAULT, MOTOR_PI_OUTPUT_MAX);
     
     return MOTOR_PID_OK;
 }
@@ -94,7 +101,7 @@ motor_pid_status_enum motor_control_update(void)
     }
     
     // 更新编码器数据
-    encoder_update();
+    //encoder_update();
     
     // 获取当前速度
     float left_current = encoder_get_speed(ENCODER_ID_LEFT);
@@ -117,8 +124,32 @@ motor_pid_status_enum motor_control_update(void)
     motor_control_system.right_output = right_output;
     
     // 输出PWM到电机
-    motor_set_pwm(MOTOR_LEFT, (int16)left_output);
-    motor_set_pwm(MOTOR_RIGHT, (int16)right_output);
+    motor_set_pwm(MOTOR_RIGHT, (int16)left_output);
+    motor_set_pwm(MOTOR_LEFT, (int16)right_output);
+    
+    // 记录PWM值用于分析响应曲线
+    if (motor_control_system.pwm_record_enabled) {
+        // 记录左电机PWM值（实际输出给右电机）
+        if (fabs(left_output) >= MOTOR_PWM_RECORD_THRESHOLD && 
+            motor_control_system.left_pwm_record_count < MOTOR_PWM_RECORD_SIZE) {
+            motor_control_system.left_pwm_record[motor_control_system.left_pwm_record_count] = left_output;
+            motor_control_system.left_pwm_record_count++;
+        }
+        
+        // 记录右电机PWM值（实际输出给左电机）
+        if (fabs(right_output) >= MOTOR_PWM_RECORD_THRESHOLD && 
+            motor_control_system.right_pwm_record_count < MOTOR_PWM_RECORD_SIZE) {
+            motor_control_system.right_pwm_record[motor_control_system.right_pwm_record_count] = right_output;
+            motor_control_system.right_pwm_record_count++;
+        }
+        
+        // 如果两个电机都记录满了，自动停止记录
+        if (motor_control_system.left_pwm_record_count >= MOTOR_PWM_RECORD_SIZE &&
+            motor_control_system.right_pwm_record_count >= MOTOR_PWM_RECORD_SIZE) {
+            motor_control_system.pwm_record_enabled = 0;
+            printf("PWM记录已满，自动停止记录\n");
+        }
+    }
     
     // 统计计数
     motor_control_system.total_update_count++;
@@ -135,7 +166,7 @@ motor_pid_status_enum motor_control_update(void)
 //=================================================内部函数实现================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     PID控制器计算（内部函数）
+// 函数简介     增量式PI控制器计算（内部函数）
 //-------------------------------------------------------------------------------------------------------------------
 static float motor_pid_calculate(motor_pid_controller_t *pid, float target, float current)
 {
@@ -143,42 +174,35 @@ static float motor_pid_calculate(motor_pid_controller_t *pid, float target, floa
         return 0.0f;
     }
     
-    // 使用固定的控制周期（嵌入式系统标准做法）
-    const float dt = 0.01f;  // 固定10ms控制周期，假设以100Hz频率调用
+    // 计算当前误差
+    float error = -target + current;
     
-    // 计算误差
-    float error = target - current;
+    // ========== 增量式PI控制算法 ==========
+    // 增量式PI控制公式: Δu(k) = Kp * [e(k) - e(k-1)] + Ki * e(k)
+    // 其中: e(k)为当前误差, e(k-1)为上次误差
     
-    // 比例项
-    float proportional = pid->kp * error;
+    // 比例增量项: Kp * [e(k) - e(k-1)]
+    float proportional_increment = pid->kp * (error - pid->last_error);
     
-    // 积分项
-    pid->integral += error * dt;
+    // 积分增量项: Ki * e(k)  
+    float integral_increment = pid->ki * error;
     
-    // 积分限幅（防止积分饱和）
-    if (pid->integral > pid->integral_max) {
-        pid->integral = pid->integral_max;
-    } else if (pid->integral < -pid->integral_max) {
-        pid->integral = -pid->integral_max;
-    }
+    // 计算控制量增量: Δu(k) = Kp*[e(k)-e(k-1)] + Ki*e(k)
+    float output_increment = proportional_increment + integral_increment;
     
-    float integral = pid->ki * pid->integral;
+    // 计算当前输出: u(k) = u(k-1) + Δu(k)
+    float output = pid->last_output + output_increment;
     
-    // 微分项
-    float derivative = pid->kd * (error - pid->last_error) / dt;
-    
-    // PID输出
-    float output = proportional + integral + derivative;
-    
-    // 输出限幅
+    // 输出限幅，确保PWM在有效范围内
     if (output > pid->output_max) {
         output = pid->output_max;
     } else if (output < -pid->output_max) {
         output = -pid->output_max;
     }
     
-    // 更新历史值
-    pid->last_error = error;
+    // 更新历史值（为下次计算做准备）
+    pid->last_error = error;      // 保存当前误差作为下次的上次误差
+    pid->last_output = output;    // 保存当前输出作为下次的上次输出
     
     // 更新统计信息
     motor_pid_update_statistics(pid, error);
@@ -195,16 +219,22 @@ static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, 
         return MOTOR_PID_ERROR;
     }
     
-    // 设置PID参数
-    pid->kp = MOTOR_PID_KP_DEFAULT;
-    pid->ki = MOTOR_PID_KI_DEFAULT;
-    pid->kd = MOTOR_PID_KD_DEFAULT;
+    // 设置PI控制参数  
+    pid->kp = MOTOR_PI_KP_DEFAULT;
+    pid->ki = MOTOR_PI_KI_DEFAULT;
+    pid->kd = MOTOR_PI_KD_DEFAULT;
+    
+    // 设置前馈控制参数
+    pid->kff = MOTOR_FEEDFORWARD_KFF;
+    pid->feedforward_a = MOTOR_FEEDFORWARD_A;
+    pid->feedforward_b = MOTOR_FEEDFORWARD_B;
     
     // 清零状态变量
-    pid->integral = 0.0f;
-    pid->last_error = 0.0f;
-    pid->integral_max = MOTOR_PID_INTEGRAL_MAX;
-    pid->output_max = MOTOR_PID_OUTPUT_MAX;
+    pid->integral = 0.0f;              // 增量式PI中不使用，但保留
+    pid->last_error = 0.0f;            // 上次误差初始化为0
+    pid->last_output = 0.0f;           // 上次输出初始化为0（增量式PI重要参数）
+    pid->integral_max = MOTOR_PI_INTEGRAL_MAX;
+    pid->output_max = MOTOR_PI_OUTPUT_MAX;
     
     // 清零统计信息
     pid->update_count = 0;
@@ -214,7 +244,7 @@ static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, 
     // 标记为已初始化
     pid->initialized = 1;
     
-    printf("%sPID控制器初始化成功\n", name);
+    printf("%s增量式PI控制器初始化成功\n", name);
     
     return MOTOR_PID_OK;
 }
@@ -243,4 +273,73 @@ static void motor_pid_update_statistics(motor_pid_controller_t *pid, float error
     } else {
         pid->average_error = 0.95f * pid->average_error + 0.05f * abs_error;
     }
+}
+
+//=================================================PWM数据记录功能================================================
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     启动PWM数据记录
+//-------------------------------------------------------------------------------------------------------------------
+void motor_start_pwm_record(void)
+{
+    if (!motor_control_system.system_enabled) {
+        printf("错误：电机控制系统未初始化，无法启动PWM记录\n");
+        return;
+    }
+    
+    // 清除之前的记录数据
+    motor_control_system.left_pwm_record_count = 0;
+    motor_control_system.right_pwm_record_count = 0;
+    memset(motor_control_system.left_pwm_record, 0, sizeof(motor_control_system.left_pwm_record));
+    memset(motor_control_system.right_pwm_record, 0, sizeof(motor_control_system.right_pwm_record));
+    
+    // 启动记录
+    motor_control_system.pwm_record_enabled = 1;
+    
+    printf("PWM数据记录已启动，将记录前%d个不为零的PWM值\n", MOTOR_PWM_RECORD_SIZE);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     停止PWM数据记录
+//-------------------------------------------------------------------------------------------------------------------
+void motor_stop_pwm_record(void)
+{
+    motor_control_system.pwm_record_enabled = 0;
+    
+    printf("PWM数据记录已停止\n");
+    printf("左电机记录了%d个PWM值，右电机记录了%d个PWM值\n", 
+           motor_control_system.left_pwm_record_count, 
+           motor_control_system.right_pwm_record_count);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取PWM记录数据
+//-------------------------------------------------------------------------------------------------------------------
+uint16 motor_get_pwm_record(motor_pid_id_enum motor_id, float *data_buffer, uint16 buffer_size)
+{
+    if (data_buffer == NULL || buffer_size == 0) {
+        return 0;
+    }
+    
+    uint16 copy_count = 0;
+    
+    switch (motor_id) {
+        case MOTOR_PID_LEFT:
+            copy_count = (motor_control_system.left_pwm_record_count < buffer_size) ? 
+                         motor_control_system.left_pwm_record_count : buffer_size;
+            memcpy(data_buffer, motor_control_system.left_pwm_record, copy_count * sizeof(float));
+            break;
+            
+        case MOTOR_PID_RIGHT:
+            copy_count = (motor_control_system.right_pwm_record_count < buffer_size) ? 
+                         motor_control_system.right_pwm_record_count : buffer_size;
+            memcpy(data_buffer, motor_control_system.right_pwm_record, copy_count * sizeof(float));
+            break;
+            
+        default:
+            printf("错误：无效的电机ID\n");
+            return 0;
+    }
+    
+    return copy_count;
 }

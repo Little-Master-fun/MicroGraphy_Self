@@ -38,6 +38,7 @@
 #include "test_motor.h"
 #include "test_encoder.h"
 
+#include "driver_encoder.h"
 #include "driver_motor.h"
 #include "motor_control.h"
 // 打开新的工程或者工程移动了位置务必执行以下操作
@@ -55,13 +56,20 @@ int main(void)
 {
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
+    
+    
     motor_pid_init();
+    motor_init();
+    encoder_init();
     pit_ms_init(PIT_CH0, 10); 
+    
+    
+    
     
     // 延时等待系统稳定
     system_delay_ms(500);
-    
-    test_motor_key_control();
+    motor_set_target_speed(-1.0f,-1.0f);
+    test_encoder_simple();
     //test_encoder_simple();
 
     

@@ -1,21 +1,21 @@
 /*********************************************************************************************************************
 * 文件名称          driver_motor.h
-* 功能说明          双电机驱动程序头文件（TB67H420FTG驱动器）
+* 功能说明          双电机驱动程序头文件（双PWM控制）
 * 作者              LittleMaster
-* 版本信息          v2.0
+* 版本信息          v3.0
 * 修改记录
 * 日期              作者                版本              备注
 * 2025-09-17        LittleMaster       1.0v              创建基础功能
 * 2025-09-22        LittleMaster       2.0v              修复TB67H420FTG控制逻辑
+* 2025-09-23        LittleMaster       3.0v              改用双PWM控制，移除方向GPIO
 * 
 * 文件作用说明：
-* 本文件为双电机驱动系统的头文件，使用TB67H420FTG双H桥驱动器
+* 本文件为双电机驱动系统的头文件，使用双PWM控制方式
 * 
-* TB67H420FTG控制逻辑：
-* - 停止：IN1=L, IN2=L, PWM=0
-* - 正转：IN1=H, IN2=L, PWM=速度值
-* - 反转：IN1=L, IN2=H, PWM=速度值
-* - 制动：IN1=H, IN2=H, PWM=0
+* 双PWM控制逻辑：
+* - 停止：PWM1=0, PWM2=0
+* - 正转：PWM1=速度值, PWM2=0
+* - 反转：PWM1=0, PWM2=速度值
 ********************************************************************************************************************/
 
 #ifndef _DRIVER_MOTOR_H_
@@ -24,17 +24,13 @@
 #include "zf_common_typedef.h"
 
 //=================================================硬件引脚定义================================================
-// 左电机控制引脚定义
-#define MOTOR_LEFT_IN1          (P03_0)     // 左电机方向控制引脚1
-#define MOTOR_LEFT_IN2          (P05_1)     // 左电机方向控制引脚2
-#define MOTOR_LEFT_PWM1         (TCPWM_CH00_P03_1)  // 左电机PWM通道1
-#define MOTOR_LEFT_PWM2         (TCPWM_CH01_P03_0)  // 左电机PWM通道2
+// 左电机PWM通道定义（双PWM控制）
+#define MOTOR_LEFT_PWM1         (TCPWM_CH00_P03_1)  // 左电机正转PWM通道
+#define MOTOR_LEFT_PWM2         (TCPWM_CH01_P03_0)  // 左电机反转PWM通道
 
-// 右电机控制引脚定义  
-#define MOTOR_RIGHT_IN1         (P02_4)     // 右电机方向控制引脚1
-#define MOTOR_RIGHT_IN2         (P06_3)     // 右电机方向控制引脚2
-#define MOTOR_RIGHT_PWM1        (TCPWM_CH04_P02_3)  // 右电机PWM通道1
-#define MOTOR_RIGHT_PWM2        (TCPWM_CH03_P02_4)  // 右电机PWM通道2
+// 右电机PWM通道定义（双PWM控制）
+#define MOTOR_RIGHT_PWM1        (TCPWM_CH04_P02_3)  // 右电机正转PWM通道
+#define MOTOR_RIGHT_PWM2        (TCPWM_CH03_P02_4)  // 右电机反转PWM通道
 
 // 开关输入引脚（可选）
 #define SWITCH1                 (P21_5)

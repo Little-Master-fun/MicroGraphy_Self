@@ -29,12 +29,22 @@
 #include "zf_common_typedef.h"
 
 //=================================================配置参数定义================================================
-#define MOTOR_PID_KP_DEFAULT        (45.0f)     // 默认比例系数
-#define MOTOR_PID_KI_DEFAULT        (3.0f)      // 默认积分系数
-#define MOTOR_PID_KD_DEFAULT        (0.0f)      // 默认微分系数
-#define MOTOR_PID_INTEGRAL_MAX      (2000.0f)   // 积分限幅
-#define MOTOR_PID_OUTPUT_MAX        (9999.0f)   // 输出限幅
-#define MOTOR_PID_MIN_DT            (0.001f)    // 最小时间间隔 (s)
+// 前馈控制参数 - 基于两点直线拟合 (2000,1.1), (3000,1.7)
+#define MOTOR_FEEDFORWARD_KFF       (1666.7f)   // 前馈系数 Kff = 1/b
+#define MOTOR_FEEDFORWARD_A         (-0.1f)     // 截距 a = v - b*PWM
+#define MOTOR_FEEDFORWARD_B         (0.0006f)   // 斜率 b = (1.7-1.1)/(3000-2000)
+
+// PI控制参数 - 优化后的参数
+#define MOTOR_PI_KP_DEFAULT         (250.0f)    // 默认比例系数
+#define MOTOR_PI_KI_DEFAULT         (420.0f)    // 默认积分系数 (原Ki=420，四舍五入)
+#define MOTOR_PI_KD_DEFAULT         (0.0f)      // 微分系数(不使用)
+#define MOTOR_PI_INTEGRAL_MAX       (7.0f)      // 积分限幅 (m) - 防止积分饱和
+#define MOTOR_PI_OUTPUT_MAX         (2000.0f)   // 输出限幅 (PWM)
+#define MOTOR_PI_CONTROL_PERIOD     (0.01f)     // 控制周期 (s) - 10ms
+
+// PWM数据记录配置
+#define MOTOR_PWM_RECORD_SIZE       (100)       // 记录PWM值的数组大小
+#define MOTOR_PWM_RECORD_THRESHOLD  (10.0f)     // PWM记录阈值（绝对值大于此值才记录）
 
 //=================================================枚举类型定义================================================
 // 电机ID枚举
@@ -54,13 +64,21 @@ typedef enum
 } motor_pid_status_enum;
 
 //=================================================数据结构定义================================================
-// PID控制器数据结构
+// 增量式PI控制器数据结构
 typedef struct {
-    float kp, ki, kd;          // PID参数
-    float integral;            // 积分累积
+    // PI控制参数
+    float kp, ki, kd;          // PI参数 (kd不使用)
+    float integral;            // 积分累积 (单位: m*s) - 增量式PI中不使用
     float last_error;          // 上次误差
-    float integral_max;        // 积分限幅
-    float output_max;          // 输出限幅
+    float last_output;         // 上次输出值 (增量式PI所需)
+    float integral_max;        // 积分限幅 (m*s)
+    float output_max;          // 输出限幅 (PWM)
+    
+    // 前馈控制参数 (增量式PI中不使用)
+    float kff;                 // 前馈系数 (PWM/(m/s))
+    float feedforward_a;       // 线性拟合截距 (m/s)
+    float feedforward_b;       // 线性拟合斜率 (m/s per PWM)
+    
     uint8 initialized;         // 初始化标志
     
     // 统计信息
@@ -86,6 +104,13 @@ typedef struct {
     float right_current_speed;                  // 右电机当前速度
     float left_output;                          // 左电机输出
     float right_output;                         // 右电机输出
+    
+    // PWM数据记录（用于分析响应曲线）
+    float left_pwm_record[MOTOR_PWM_RECORD_SIZE];   // 左电机PWM记录数组
+    float right_pwm_record[MOTOR_PWM_RECORD_SIZE];  // 右电机PWM记录数组
+    uint16 left_pwm_record_count;               // 左电机PWM记录计数
+    uint16 right_pwm_record_count;              // 右电机PWM记录计数
+    uint8 pwm_record_enabled;                   // PWM记录使能标志
 } motor_control_system_t;
 
 //=================================================全局变量声明================================================
@@ -98,7 +123,7 @@ extern motor_control_system_t motor_control_system;
 // 参数说明     void
 // 返回参数     motor_pid_status_enum   初始化状态
 // 使用示例     motor_pid_init();
-// 备注信息     使用默认PID参数初始化左右电机控制器 (Kp=45, Ki=3, Kd=0)
+// 备注信息     使用默认增量式PI参数初始化左右电机控制器 (Kp=250, Ki=420, Kd=0)
 //-------------------------------------------------------------------------------------------------------------------
 motor_pid_status_enum motor_pid_init(void);
 
@@ -120,5 +145,34 @@ motor_pid_status_enum motor_set_target_speed(float left_speed, float right_speed
 // 备注信息     执行编码器读取、PID计算、PWM输出的完整控制循环，需在固定周期中断中调用
 //-------------------------------------------------------------------------------------------------------------------
 motor_pid_status_enum motor_control_update(void);
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     启动PWM数据记录
+// 参数说明     void
+// 返回参数     void
+// 使用示例     motor_start_pwm_record();
+// 备注信息     清除之前的记录数据并开始记录新的PWM值，用于分析响应曲线
+//-------------------------------------------------------------------------------------------------------------------
+void motor_start_pwm_record(void);
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     停止PWM数据记录
+// 参数说明     void
+// 返回参数     void
+// 使用示例     motor_stop_pwm_record();
+// 备注信息     停止记录PWM值，保留已记录的数据供分析
+//-------------------------------------------------------------------------------------------------------------------
+void motor_stop_pwm_record(void);
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取PWM记录数据
+// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/MOTOR_PID_RIGHT)
+// 参数说明     data_buffer         数据缓冲区指针
+// 参数说明     buffer_size         缓冲区大小
+// 返回参数     uint16              实际复制的数据个数
+// 使用示例     count = motor_get_pwm_record(MOTOR_PID_LEFT, buffer, 100);
+// 备注信息     将记录的PWM数据复制到指定缓冲区，返回实际复制的数据个数
+//-------------------------------------------------------------------------------------------------------------------
+uint16 motor_get_pwm_record(motor_pid_id_enum motor_id, float *data_buffer, uint16 buffer_size);
 
 #endif // _MOTOR_CONTROL_H_

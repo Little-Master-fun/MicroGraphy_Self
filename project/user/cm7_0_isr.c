@@ -45,13 +45,14 @@ void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数
     static uint16 nav_counter = 0;
     nav_counter++;
     
-    encoder_update();
-    motor_control_update();
+    // encoder_update();
+    
 }
 
 void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH1);
+    motor_control_update();
     
 }
 

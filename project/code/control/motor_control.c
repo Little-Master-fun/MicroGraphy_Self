@@ -2,10 +2,12 @@
 * 文件名称          motor_control.c
 * 功能说明          电机PID闭环控制系统实现文件
 * 作者              LittleMaster
-* 版本信息          v1.0
+* 版本信息          v3.0
 * 修改记录
 * 日期              作者                版本              备注
-* 2025-09-19        LittleMaster        v1.0              创建电机PID控制系统实现
+* 2025-09-13        LittleMaster        v1.0              创建电机前反馈+PID控制系统实现
+* 2025-09-17        LittleMaster        v2.0              效果不好，改为增量式PI控制
+* 2025-09-19        LittleMaster        v3.0              调整最优参数，电机响应30ms内
 *
 * 文件作用说明：
 * 本文件实现电机PID闭环控制系统的所有功能，提供双电机的精确速度控制
@@ -29,7 +31,7 @@ motor_control_system_t motor_control_system = {0};
 
 //=================================================内部函数声明================================================
 static float motor_pid_calculate(motor_pid_controller_t *pid, float target, float current);
-static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, const char* name);
+static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, const char* name, float kp, float ki, float kd);
 static void motor_pid_update_statistics(motor_pid_controller_t *pid, float error);
 
 //=================================================主要接口函数================================================
@@ -43,13 +45,15 @@ motor_pid_status_enum motor_pid_init(void)
     memset(&motor_control_system, 0, sizeof(motor_control_system_t));
     
     // 初始化左电机PID控制器
-    if (motor_pid_init_single(&motor_control_system.left_pid, "左电机") != MOTOR_PID_OK) {
+    if (motor_pid_init_single(&motor_control_system.left_pid, "左电机", 
+                             MOTOR_LEFT_PI_KP_DEFAULT, MOTOR_LEFT_PI_KI_DEFAULT, MOTOR_LEFT_PI_KD_DEFAULT) != MOTOR_PID_OK) {
         printf("错误：左电机PID初始化失败\n");
         return MOTOR_PID_ERROR;
     }
     
     // 初始化右电机PID控制器
-    if (motor_pid_init_single(&motor_control_system.right_pid, "右电机") != MOTOR_PID_OK) {
+    if (motor_pid_init_single(&motor_control_system.right_pid, "右电机", 
+                             MOTOR_RIGHT_PI_KP_DEFAULT, MOTOR_RIGHT_PI_KI_DEFAULT, MOTOR_RIGHT_PI_KD_DEFAULT) != MOTOR_PID_OK) {
         printf("错误：右电机PID初始化失败\n");
         return MOTOR_PID_ERROR;
     }
@@ -67,8 +71,12 @@ motor_pid_status_enum motor_pid_init(void)
     memset(motor_control_system.right_pwm_record, 0, sizeof(motor_control_system.right_pwm_record));
     
     printf("电机增量式PI闭环控制系统初始化完成\n");
-    printf("增量式PI参数: Kp=%.1f Ki=%.1f 输出限幅=%.1f\n", 
-           MOTOR_PI_KP_DEFAULT, MOTOR_PI_KI_DEFAULT, MOTOR_PI_OUTPUT_MAX);
+    printf("左电机PI参数: Kp=%.1f Ki=%.1f Kd=%.1f\n", 
+           MOTOR_LEFT_PI_KP_DEFAULT, MOTOR_LEFT_PI_KI_DEFAULT, MOTOR_LEFT_PI_KD_DEFAULT);
+    printf("右电机PI参数: Kp=%.1f Ki=%.1f Kd=%.1f\n", 
+           MOTOR_RIGHT_PI_KP_DEFAULT, MOTOR_RIGHT_PI_KI_DEFAULT, MOTOR_RIGHT_PI_KD_DEFAULT);
+    printf("输出限幅=%.1f, 控制周期=%.1fms\n", 
+           MOTOR_PI_OUTPUT_MAX, MOTOR_PI_CONTROL_PERIOD * 1000.0f);
     
     return MOTOR_PID_OK;
 }
@@ -101,7 +109,7 @@ motor_pid_status_enum motor_control_update(void)
     }
     
     // 更新编码器数据
-    //encoder_update();
+    encoder_update();
     
     // 获取当前速度
     float left_current = encoder_get_speed(ENCODER_ID_LEFT);
@@ -213,16 +221,16 @@ static float motor_pid_calculate(motor_pid_controller_t *pid, float target, floa
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     初始化单个PID控制器（内部函数）
 //-------------------------------------------------------------------------------------------------------------------
-static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, const char* name)
+static motor_pid_status_enum motor_pid_init_single(motor_pid_controller_t *pid, const char* name, float kp, float ki, float kd)
 {
     if (pid == NULL) {
         return MOTOR_PID_ERROR;
     }
     
     // 设置PI控制参数  
-    pid->kp = MOTOR_PI_KP_DEFAULT;
-    pid->ki = MOTOR_PI_KI_DEFAULT;
-    pid->kd = MOTOR_PI_KD_DEFAULT;
+    pid->kp = kp;
+    pid->ki = ki;
+    pid->kd = kd;
     
     // 设置前馈控制参数
     pid->kff = MOTOR_FEEDFORWARD_KFF;
@@ -342,4 +350,91 @@ uint16 motor_get_pwm_record(motor_pid_id_enum motor_id, float *data_buffer, uint
     }
     
     return copy_count;
+}
+
+//=================================================参数设置接口================================================
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     设置电机PI参数
+//-------------------------------------------------------------------------------------------------------------------
+motor_pid_status_enum motor_set_pi_params(motor_pid_id_enum motor_id, float kp, float ki, float kd)
+{
+    if (!motor_control_system.system_enabled) {
+        printf("错误：电机控制系统未初始化\n");
+        return MOTOR_PID_NOT_INIT;
+    }
+    
+    // 参数有效性检查
+    if (kp < 0.0f || ki < 0.0f || kd < 0.0f) {
+        printf("错误：PI参数不能为负数\n");
+        return MOTOR_PID_ERROR;
+    }
+    
+    switch (motor_id) {
+        case MOTOR_PID_LEFT:
+            motor_control_system.left_pid.kp = kp;
+            motor_control_system.left_pid.ki = ki;
+            motor_control_system.left_pid.kd = kd;
+            printf("左电机PI参数已更新: Kp=%.1f Ki=%.1f Kd=%.1f\n", kp, ki, kd);
+            break;
+            
+        case MOTOR_PID_RIGHT:
+            motor_control_system.right_pid.kp = kp;
+            motor_control_system.right_pid.ki = ki;
+            motor_control_system.right_pid.kd = kd;
+            printf("右电机PI参数已更新: Kp=%.1f Ki=%.1f Kd=%.1f\n", kp, ki, kd);
+            break;
+            
+        case MOTOR_PID_BOTH:
+            motor_control_system.left_pid.kp = kp;
+            motor_control_system.left_pid.ki = ki;
+            motor_control_system.left_pid.kd = kd;
+            motor_control_system.right_pid.kp = kp;
+            motor_control_system.right_pid.ki = ki;
+            motor_control_system.right_pid.kd = kd;
+            printf("左右电机PI参数已更新: Kp=%.1f Ki=%.1f Kd=%.1f\n", kp, ki, kd);
+            break;
+            
+        default:
+            printf("错误：无效的电机ID\n");
+            return MOTOR_PID_ERROR;
+    }
+    
+    return MOTOR_PID_OK;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取电机PI参数
+//-------------------------------------------------------------------------------------------------------------------
+motor_pid_status_enum motor_get_pi_params(motor_pid_id_enum motor_id, float *kp, float *ki, float *kd)
+{
+    if (!motor_control_system.system_enabled) {
+        printf("错误：电机控制系统未初始化\n");
+        return MOTOR_PID_NOT_INIT;
+    }
+    
+    if (kp == NULL || ki == NULL || kd == NULL) {
+        printf("错误：参数指针不能为空\n");
+        return MOTOR_PID_ERROR;
+    }
+    
+    switch (motor_id) {
+        case MOTOR_PID_LEFT:
+            *kp = motor_control_system.left_pid.kp;
+            *ki = motor_control_system.left_pid.ki;
+            *kd = motor_control_system.left_pid.kd;
+            break;
+            
+        case MOTOR_PID_RIGHT:
+            *kp = motor_control_system.right_pid.kp;
+            *ki = motor_control_system.right_pid.ki;
+            *kd = motor_control_system.right_pid.kd;
+            break;
+            
+        default:
+            printf("错误：无效的电机ID\n");
+            return MOTOR_PID_ERROR;
+    }
+    
+    return MOTOR_PID_OK;
 }

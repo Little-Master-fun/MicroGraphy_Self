@@ -34,13 +34,20 @@
 #define MOTOR_FEEDFORWARD_A         (-0.1f)     // 截距 a = v - b*PWM
 #define MOTOR_FEEDFORWARD_B         (0.0006f)   // 斜率 b = (1.7-1.1)/(3000-2000)
 
-// PI控制参数 - 优化后的参数
-#define MOTOR_PI_KP_DEFAULT         (250.0f)    // 默认比例系数
-#define MOTOR_PI_KI_DEFAULT         (420.0f)    // 默认积分系数 (原Ki=420，四舍五入)
-#define MOTOR_PI_KD_DEFAULT         (0.0f)      // 微分系数(不使用)
-#define MOTOR_PI_INTEGRAL_MAX       (7.0f)      // 积分限幅 (m) - 防止积分饱和
-#define MOTOR_PI_OUTPUT_MAX         (2000.0f)   // 输出限幅 (PWM)
-#define MOTOR_PI_CONTROL_PERIOD     (0.01f)     // 控制周期 (s) - 10ms
+// 左电机PI控制参数(20ms响应级)
+#define MOTOR_LEFT_PI_KP_DEFAULT    (2500.0f)    // 左电机比例系数
+#define MOTOR_LEFT_PI_KI_DEFAULT    (525.0f)     // 左电机积分系数
+#define MOTOR_LEFT_PI_KD_DEFAULT    (0.0f)       // 左电机微分系数
+
+// 右电机PI控制参数  
+#define MOTOR_RIGHT_PI_KP_DEFAULT   (2500.0f)    // 右电机比例系数
+#define MOTOR_RIGHT_PI_KI_DEFAULT   (525.0f)     // 右电机积分系数
+#define MOTOR_RIGHT_PI_KD_DEFAULT   (0.0f)       // 右电机微分系数
+
+// 通用PI控制参数
+#define MOTOR_PI_INTEGRAL_MAX       (7.0f)       // 积分限幅 (m) - 防止积分饱和
+#define MOTOR_PI_OUTPUT_MAX         (9999.0f)    // 输出限幅 (PWM)
+#define MOTOR_PI_CONTROL_PERIOD     (0.002f)     // 控制周期 (s) - 2ms
 
 // PWM数据记录配置
 #define MOTOR_PWM_RECORD_SIZE       (100)       // 记录PWM值的数组大小
@@ -174,5 +181,29 @@ void motor_stop_pwm_record(void);
 // 备注信息     将记录的PWM数据复制到指定缓冲区，返回实际复制的数据个数
 //-------------------------------------------------------------------------------------------------------------------
 uint16 motor_get_pwm_record(motor_pid_id_enum motor_id, float *data_buffer, uint16 buffer_size);
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     设置电机PI参数
+// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/MOTOR_PID_RIGHT/MOTOR_PID_BOTH)
+// 参数说明     kp                  比例系数
+// 参数说明     ki                  积分系数  
+// 参数说明     kd                  微分系数
+// 返回参数     motor_pid_status_enum   设置状态
+// 使用示例     motor_set_pi_params(MOTOR_PID_LEFT, 2000.0f, 400.0f, 0.0f);
+// 备注信息     运行时动态调整指定电机的PI参数，支持左右电机独立设置
+//-------------------------------------------------------------------------------------------------------------------
+motor_pid_status_enum motor_set_pi_params(motor_pid_id_enum motor_id, float kp, float ki, float kd);
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取电机PI参数
+// 参数说明     motor_id            电机ID (MOTOR_PID_LEFT/MOTOR_PID_RIGHT)
+// 参数说明     kp                  比例系数指针
+// 参数说明     ki                  积分系数指针
+// 参数说明     kd                  微分系数指针
+// 返回参数     motor_pid_status_enum   获取状态
+// 使用示例     motor_get_pi_params(MOTOR_PID_LEFT, &kp, &ki, &kd);
+// 备注信息     获取指定电机当前的PI参数值
+//-------------------------------------------------------------------------------------------------------------------
+motor_pid_status_enum motor_get_pi_params(motor_pid_id_enum motor_id, float *kp, float *ki, float *kd);
 
 #endif // _MOTOR_CONTROL_H_

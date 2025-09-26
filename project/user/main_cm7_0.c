@@ -61,14 +61,15 @@ int main(void)
     motor_pid_init();
     motor_init();
     encoder_init();
-    pit_ms_init(PIT_CH0, 10); 
-    
+    pit_ms_init(PIT_CH0, 5); 
+    pit_ms_init(PIT_CH1, 2); 
     
     
     
     // 延时等待系统稳定
     system_delay_ms(500);
-    motor_set_target_speed(-1.0f,-1.0f);
+    motor_set_target_speed(-2.0f,-2.0f);
+    motor_start_pwm_record();
     test_encoder_simple();
     //test_encoder_simple();
 

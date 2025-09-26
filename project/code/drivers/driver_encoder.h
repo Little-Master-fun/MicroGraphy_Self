@@ -37,7 +37,7 @@
 #define ENCODER_RIGHT_B                 (TC_CH20_ENCODER_CH2_P08_2)         // 右编码器B相引脚
 
 //=================================================配置参数定义================================================
-#define ENCODER_SAMPLE_TIME             (10)        // 采样时间间隔 (ms)
+#define ENCODER_SAMPLE_TIME             (2)        // 采样时间间隔 (ms)
 #define ENCODER_PPR                     (2900)      // 编码器每转脉冲数 (Pulse Per Revolution)
 #define ENCODER_WHEEL_DIAMETER          (20.0f)     // 车轮直径 (mm) 
 #define ENCODER_GEAR_RATIO              (1.0f)      // 齿轮减速比

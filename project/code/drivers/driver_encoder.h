@@ -23,8 +23,10 @@
 
 #include "zf_common_typedef.h"
 
- #define M_PI 3.14159265358979323846
-// M_PI定义在config_navigation.h中，避免重复定义
+// 避免M_PI重复定义
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 //=================================================硬件引脚定义================================================
 // 左编码器（编码器1）引脚定义
 #define ENCODER_LEFT                    (TC_CH07_ENCODER)                   // 左编码器接口

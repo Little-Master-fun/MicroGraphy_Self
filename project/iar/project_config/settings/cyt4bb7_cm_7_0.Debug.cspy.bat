@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"D:\IAR\common\bin\cspybat" -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --backend -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
+"D:\IAR\common\bin\cspybat" -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --backend -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"D:\IAR\common\bin\cspybat" -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" "--debug_file=%~1" --backend -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
+"D:\IAR\common\bin\cspybat" -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" "--debug_file=%~1" --backend -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
 
 @echo off 
 :end

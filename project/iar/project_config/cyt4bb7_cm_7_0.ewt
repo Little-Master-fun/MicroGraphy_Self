@@ -1437,6 +1437,12 @@
         <group>
             <name>control</name>
             <file>
+                <name>$PROJ_DIR$\..\..\code\control\imu_ahrs_complementary.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\control\imu_ahrs_complementary.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\code\control\imu_attitude.c</name>
             </file>
             <file>

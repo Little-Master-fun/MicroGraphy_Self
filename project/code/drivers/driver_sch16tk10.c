@@ -967,26 +967,70 @@ int SCH1_init(SCH1_filter sFilter, SCH1_sensitivity sSensitivity, SCH1_decimatio
 
 void SCH1_getData(SCH1_raw_data *data)
 {
+    // Read all channels sequentially
+    // Rate1 channels
     SCH1_sendRequest(REQ_READ_RATE_X1);
-    uint64_t rate_x_raw = SCH1_sendRequest(REQ_READ_RATE_Y1);
-    uint64_t rate_y_raw = SCH1_sendRequest(REQ_READ_RATE_Z1);
-    uint64_t rate_z_raw = SCH1_sendRequest(REQ_READ_ACC_X1);
-    uint64_t acc_x_raw  = SCH1_sendRequest(REQ_READ_ACC_Y1);
-    uint64_t acc_y_raw  = SCH1_sendRequest(REQ_READ_ACC_Z1);
-    uint64_t acc_z_raw  = SCH1_sendRequest(REQ_READ_TEMP);
+    uint64_t rate1_x_raw = SCH1_sendRequest(REQ_READ_RATE_Y1);
+    uint64_t rate1_y_raw = SCH1_sendRequest(REQ_READ_RATE_Z1);
+    uint64_t rate1_z_raw = SCH1_sendRequest(REQ_READ_ACC_X1);
+    
+    // Acc1 channels
+    uint64_t acc1_x_raw  = SCH1_sendRequest(REQ_READ_ACC_Y1);
+    uint64_t acc1_y_raw  = SCH1_sendRequest(REQ_READ_ACC_Z1);
+    uint64_t acc1_z_raw  = SCH1_sendRequest(REQ_READ_RATE_X2);
+    
+    // Rate2 channels
+    uint64_t rate2_x_raw = SCH1_sendRequest(REQ_READ_RATE_Y2);
+    uint64_t rate2_y_raw = SCH1_sendRequest(REQ_READ_RATE_Z2);
+    uint64_t rate2_z_raw = SCH1_sendRequest(REQ_READ_ACC_X2);
+    
+    // Acc2 channels
+    uint64_t acc2_x_raw  = SCH1_sendRequest(REQ_READ_ACC_Y2);
+    uint64_t acc2_y_raw  = SCH1_sendRequest(REQ_READ_ACC_Z2);
+    uint64_t acc2_z_raw  = SCH1_sendRequest(REQ_READ_ACC_X3);
+    
+    // Acc3 channels
+    uint64_t acc3_x_raw  = SCH1_sendRequest(REQ_READ_ACC_Y3);
+    uint64_t acc3_y_raw  = SCH1_sendRequest(REQ_READ_ACC_Z3);
+    uint64_t acc3_z_raw  = SCH1_sendRequest(REQ_READ_TEMP);
+    
+    // Temperature
     uint64_t temp_raw   = SCH1_sendRequest(REQ_READ_TEMP);
 
     // Get possible frame errors
-    uint64_t miso_words[] = {rate_x_raw, rate_y_raw, rate_z_raw, acc_x_raw, acc_y_raw, acc_z_raw, temp_raw};       
+    uint64_t miso_words[] = {rate1_x_raw, rate1_y_raw, rate1_z_raw, 
+                            acc1_x_raw, acc1_y_raw, acc1_z_raw,
+                            rate2_x_raw, rate2_y_raw, rate2_z_raw,
+                            acc2_x_raw, acc2_y_raw, acc2_z_raw,
+                            acc3_x_raw, acc3_y_raw, acc3_z_raw,
+                            temp_raw};       
     data->frame_error = SCH1_check_48bit_frame_error(miso_words, (sizeof(miso_words) / sizeof(uint64_t)));
     
     // Parse MISO data to structure
-    data->Rate1_raw[AXIS_X] = SPI48_DATA_INT32(rate_x_raw);
-    data->Rate1_raw[AXIS_Y] = SPI48_DATA_INT32(rate_y_raw);
-    data->Rate1_raw[AXIS_Z] = SPI48_DATA_INT32(rate_z_raw);
-    data->Acc1_raw[AXIS_X]  = SPI48_DATA_INT32(acc_x_raw);
-    data->Acc1_raw[AXIS_Y]  = SPI48_DATA_INT32(acc_y_raw);
-    data->Acc1_raw[AXIS_Z]  = SPI48_DATA_INT32(acc_z_raw);
+    // Rate1
+    data->Rate1_raw[AXIS_X] = SPI48_DATA_INT32(rate1_x_raw);
+    data->Rate1_raw[AXIS_Y] = SPI48_DATA_INT32(rate1_y_raw);
+    data->Rate1_raw[AXIS_Z] = SPI48_DATA_INT32(rate1_z_raw);
+    
+    // Acc1
+    data->Acc1_raw[AXIS_X]  = SPI48_DATA_INT32(acc1_x_raw);
+    data->Acc1_raw[AXIS_Y]  = SPI48_DATA_INT32(acc1_y_raw);
+    data->Acc1_raw[AXIS_Z]  = SPI48_DATA_INT32(acc1_z_raw);
+    
+    // Rate2
+    data->Rate2_raw[AXIS_X] = SPI48_DATA_INT32(rate2_x_raw);
+    data->Rate2_raw[AXIS_Y] = SPI48_DATA_INT32(rate2_y_raw);
+    data->Rate2_raw[AXIS_Z] = SPI48_DATA_INT32(rate2_z_raw);
+    
+    // Acc2
+    data->Acc2_raw[AXIS_X]  = SPI48_DATA_INT32(acc2_x_raw);
+    data->Acc2_raw[AXIS_Y]  = SPI48_DATA_INT32(acc2_y_raw);
+    data->Acc2_raw[AXIS_Z]  = SPI48_DATA_INT32(acc2_z_raw);
+    
+    // Acc3
+    data->Acc3_raw[AXIS_X]  = SPI48_DATA_INT32(acc3_x_raw);
+    data->Acc3_raw[AXIS_Y]  = SPI48_DATA_INT32(acc3_y_raw);
+    data->Acc3_raw[AXIS_Z]  = SPI48_DATA_INT32(acc3_z_raw);
 
     // Temperature data is always 16 bits wide. Drop 4 LSBs as they are not used.
     data->Temp_raw = SPI48_DATA_INT32(temp_raw) >> 4;
@@ -997,12 +1041,28 @@ void SCH1_getData(SCH1_raw_data *data)
 void SCH1_convert_data(SCH1_raw_data *data_in, SCH1_result *data_out)
 {
     // Convert from raw counts to sensitivity - data_in contains summed data, need to average first
+    
+    // Rate channels
     data_out->Rate1[AXIS_X] = (float)data_in->Rate1_raw[AXIS_X] / (SENSITIVITY_RATE1 * (float)AVG_FACTOR);
     data_out->Rate1[AXIS_Y] = (float)data_in->Rate1_raw[AXIS_Y] / (SENSITIVITY_RATE1 * (float)AVG_FACTOR);
     data_out->Rate1[AXIS_Z] = (float)data_in->Rate1_raw[AXIS_Z] / (SENSITIVITY_RATE1 * (float)AVG_FACTOR);
+    
+    data_out->Rate2[AXIS_X] = (float)data_in->Rate2_raw[AXIS_X] / (SENSITIVITY_RATE2 * (float)AVG_FACTOR);
+    data_out->Rate2[AXIS_Y] = (float)data_in->Rate2_raw[AXIS_Y] / (SENSITIVITY_RATE2 * (float)AVG_FACTOR);
+    data_out->Rate2[AXIS_Z] = (float)data_in->Rate2_raw[AXIS_Z] / (SENSITIVITY_RATE2 * (float)AVG_FACTOR);
+    
+    // Acceleration channels
     data_out->Acc1[AXIS_X]  = (float)data_in->Acc1_raw[AXIS_X] / (SENSITIVITY_ACC1 * (float)AVG_FACTOR);
     data_out->Acc1[AXIS_Y]  = (float)data_in->Acc1_raw[AXIS_Y] / (SENSITIVITY_ACC1 * (float)AVG_FACTOR);
     data_out->Acc1[AXIS_Z]  = (float)data_in->Acc1_raw[AXIS_Z] / (SENSITIVITY_ACC1 * (float)AVG_FACTOR);
+    
+    data_out->Acc2[AXIS_X]  = (float)data_in->Acc2_raw[AXIS_X] / (SENSITIVITY_ACC2 * (float)AVG_FACTOR);
+    data_out->Acc2[AXIS_Y]  = (float)data_in->Acc2_raw[AXIS_Y] / (SENSITIVITY_ACC2 * (float)AVG_FACTOR);
+    data_out->Acc2[AXIS_Z]  = (float)data_in->Acc2_raw[AXIS_Z] / (SENSITIVITY_ACC2 * (float)AVG_FACTOR);
+    
+    data_out->Acc3[AXIS_X]  = (float)data_in->Acc3_raw[AXIS_X] / (SENSITIVITY_ACC3 * (float)AVG_FACTOR);
+    data_out->Acc3[AXIS_Y]  = (float)data_in->Acc3_raw[AXIS_Y] / (SENSITIVITY_ACC3 * (float)AVG_FACTOR);
+    data_out->Acc3[AXIS_Z]  = (float)data_in->Acc3_raw[AXIS_Z] / (SENSITIVITY_ACC3 * (float)AVG_FACTOR);
 
     // Convert temperature and calculate average
     data_out->Temp = GET_TEMPERATURE((float)data_in->Temp_raw / (float)AVG_FACTOR);

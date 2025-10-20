@@ -44,6 +44,7 @@
 #include "driver_motor.h"
 #include "motor_control.h"
 #include "imu_attitude.h"
+#include "imu_ahrs_complementary.h"
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
@@ -64,19 +65,21 @@ int main(void)
     motor_pid_init();
     motor_init();
     encoder_init();
-    imu_attitude_init(IMU_MODE_MAHONY);
+    imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
+    ahrs_complementary_init();
 
-    pit_ms_init(PIT_CH1, 2); //导航算法
-    pit_ms_init(PIT_CH2, 1); //IMU原始数据
-    pit_ms_init(PIT_CH0, 5); //IMU姿态解算
+
     
     
     
     // 延时等待系统稳定
-    system_delay_ms(500);
+    system_delay_ms(600);
+    pit_ms_init(PIT_CH1, 2); //导航算法
+    pit_ms_init(PIT_CH2, 1); //IMU原始数据
+    pit_ms_init(PIT_CH0, 5); //IMU姿态解算
     //test_nav_system();
     //test_encoder_simple();
-    // test_imu_system();
+    //test_imu_system();
 
     
 

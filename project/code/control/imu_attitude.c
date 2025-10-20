@@ -21,11 +21,13 @@
 
 #include "imu_attitude.h"
 #include "driver_sch16tk10.h"
+#include "config_infineon.h"
 #include "zf_common_headfile.h"
 #include "zf_driver_timer.h"
 #include "zf_driver_delay.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 //=================================================全局变量定义================================================
 imu_attitude_system_t imu_attitude_system = {0};
@@ -35,8 +37,10 @@ static uint8 imu_timer_initialized = 0;
 
 // SCH16TK10 传感器相关变量
 static SCH1_raw_data sch1_raw_data;
+static SCH1_raw_data sch1_summed_data;  // 累加数据缓冲区
 static SCH1_result sch1_result_data;
 static uint8 sch1_initialized = 0;
+static uint32 sch1_sample_count = 0;    // 采样计数器
 
 //=================================================内部函数声明================================================
 static imu_status_enum imu_apply_calibration(void);
@@ -94,6 +98,9 @@ imu_status_enum imu_attitude_init(imu_calc_mode_enum calc_mode)
     imu_attitude_system.mahony_kp = IMU_MAHONY_KP;
     imu_attitude_system.mahony_ki = IMU_MAHONY_KI;
     
+    // 设置初始参考重力加速度（校准后会更新）
+    imu_attitude_system.calibration.reference_gravity = IMU_GRAVITY_ACCEL;
+    
     // 初始化四元数为单位四元数
     imu_attitude_system.processed_data.quaternion.w = 1.0f;
     imu_attitude_system.processed_data.quaternion.x = 0.0f;
@@ -144,6 +151,34 @@ imu_status_enum imu_update_sensor_data(float gyro_x, float gyro_y, float gyro_z,
 {
     if(imu_attitude_system.status == IMU_STATUS_NOT_INIT)
         return IMU_STATUS_NOT_INIT;
+    
+    // 数据有效性检查：检测NaN和Inf
+    if(isnan(gyro_x) || isnan(gyro_y) || isnan(gyro_z) ||
+       isnan(accel_x) || isnan(accel_y) || isnan(accel_z) ||
+       isinf(gyro_x) || isinf(gyro_y) || isinf(gyro_z) ||
+       isinf(accel_x) || isinf(accel_y) || isinf(accel_z))
+    {
+        printf("传感器数据异常(NaN/Inf): gyro(%.3f,%.3f,%.3f) accel(%.3f,%.3f,%.3f)\r\n",
+               gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z);
+        imu_attitude_system.raw_data.data_valid = 0;
+        return IMU_STATUS_DATA_INVALID;
+    }
+    
+    // 合理性检查：陀螺仪范围±2000 deg/s = ±34.9 rad/s
+    if(fabs(gyro_x) > 35.0f || fabs(gyro_y) > 35.0f || fabs(gyro_z) > 35.0f)
+    {
+        printf("陀螺仪数据超出范围: gyro(%.3f,%.3f,%.3f)\r\n", gyro_x, gyro_y, gyro_z);
+        imu_attitude_system.raw_data.data_valid = 0;
+        return IMU_STATUS_DATA_INVALID;
+    }
+    
+    // 合理性检查：加速度计范围±16g = ±156.8 m/s?
+    if(fabs(accel_x) > 156.8f || fabs(accel_y) > 156.8f || fabs(accel_z) > 156.8f)
+    {
+        printf("加速度计数据超出范围: accel(%.3f,%.3f,%.3f)\r\n", accel_x, accel_y, accel_z);
+        imu_attitude_system.raw_data.data_valid = 0;
+        return IMU_STATUS_DATA_INVALID;
+    }
     
     // 更新原始数据
     imu_attitude_system.raw_data.gyro_raw.x = gyro_x;
@@ -284,6 +319,7 @@ imu_status_enum imu_attitude_reset(void)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     从SCH16TK10传感器自动采集数据 (建议在1ms中断中调用)
+// 备注信息     实现AVG_FACTOR次采样平均，减少噪声
 //-------------------------------------------------------------------------------------------------------------------
 imu_status_enum imu_update_from_sensor(void)
 {
@@ -294,24 +330,63 @@ imu_status_enum imu_update_from_sensor(void)
     SCH1_getData(&sch1_raw_data);
     
     // 检查数据帧是否有错误
-    if (!sch1_raw_data.frame_error)
+    if (sch1_raw_data.frame_error)
     {
-        // 转换为物理量
-        SCH1_convert_data(&sch1_raw_data, &sch1_result_data);
+        return IMU_STATUS_DATA_INVALID;
+    }
+    
+    // 累加原始数据
+    sch1_summed_data.Rate1_raw[AXIS_X] += sch1_raw_data.Rate1_raw[AXIS_X];
+    sch1_summed_data.Rate1_raw[AXIS_Y] += sch1_raw_data.Rate1_raw[AXIS_Y];
+    sch1_summed_data.Rate1_raw[AXIS_Z] += sch1_raw_data.Rate1_raw[AXIS_Z];
+    
+    sch1_summed_data.Rate2_raw[AXIS_X] += sch1_raw_data.Rate2_raw[AXIS_X];
+    sch1_summed_data.Rate2_raw[AXIS_Y] += sch1_raw_data.Rate2_raw[AXIS_Y];
+    sch1_summed_data.Rate2_raw[AXIS_Z] += sch1_raw_data.Rate2_raw[AXIS_Z];
+    
+    sch1_summed_data.Acc1_raw[AXIS_X] += sch1_raw_data.Acc1_raw[AXIS_X];
+    sch1_summed_data.Acc1_raw[AXIS_Y] += sch1_raw_data.Acc1_raw[AXIS_Y];
+    sch1_summed_data.Acc1_raw[AXIS_Z] += sch1_raw_data.Acc1_raw[AXIS_Z];
+    
+    sch1_summed_data.Acc2_raw[AXIS_X] += sch1_raw_data.Acc2_raw[AXIS_X];
+    sch1_summed_data.Acc2_raw[AXIS_Y] += sch1_raw_data.Acc2_raw[AXIS_Y];
+    sch1_summed_data.Acc2_raw[AXIS_Z] += sch1_raw_data.Acc2_raw[AXIS_Z];
+    
+    sch1_summed_data.Acc3_raw[AXIS_X] += sch1_raw_data.Acc3_raw[AXIS_X];
+    sch1_summed_data.Acc3_raw[AXIS_Y] += sch1_raw_data.Acc3_raw[AXIS_Y];
+    sch1_summed_data.Acc3_raw[AXIS_Z] += sch1_raw_data.Acc3_raw[AXIS_Z];
+    
+    sch1_summed_data.Temp_raw += sch1_raw_data.Temp_raw;
+    
+    // 采样计数递增
+    sch1_sample_count++;
+    
+    // 当累加次数达到AVG_FACTOR时，转换数据并更新姿态
+    if (sch1_sample_count >= AVG_FACTOR)
+    {
+        // 转换为物理量（自动除以AVG_FACTOR进行平均）
+        SCH1_convert_data(&sch1_summed_data, &sch1_result_data);
         
         // 将SCH16TK10数据更新到IMU姿态解算模块
-        // SCH16TK10: Rate1为角速度(rad/s), Acc1为加速度(m/s?)
-        return imu_update_sensor_data(
+        // SCH16TK10: Rate1为角速度(rad/s), Acc2为加速度(m/s?)
+        imu_status_enum status = imu_update_sensor_data(
             sch1_result_data.Rate1[AXIS_X],    // 陀螺仪X轴 (rad/s)
             sch1_result_data.Rate1[AXIS_Y],    // 陀螺仪Y轴 (rad/s) 
             sch1_result_data.Rate1[AXIS_Z],    // 陀螺仪Z轴 (rad/s)
-            sch1_result_data.Acc1[AXIS_X],     // 加速度计X轴 (m/s?)
-            sch1_result_data.Acc1[AXIS_Y],     // 加速度计Y轴 (m/s?)
-            sch1_result_data.Acc1[AXIS_Z]      // 加速度计Z轴 (m/s?)
+            sch1_result_data.Acc2[AXIS_X],     // 加速度计X轴 (m/s?)
+            sch1_result_data.Acc2[AXIS_Y],     // 加速度计Y轴 (m/s?)
+            sch1_result_data.Acc2[AXIS_Z]      // 加速度计Z轴 (m/s?)
         );
+        
+        // 重置采样计数和累加缓冲区
+        sch1_sample_count = 0;
+        memset(&sch1_summed_data, 0, sizeof(SCH1_raw_data));
+        
+        return status;
     }
     
-    return IMU_STATUS_DATA_INVALID;
+    // 尚未累加足够次数，返回OK但不更新姿态
+    return IMU_STATUS_OK;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -321,26 +396,26 @@ imu_status_enum imu_init_sensor(void)
 {
     printf("正在初始化SCH16TK10传感器...\r\n");
     
-    // 设置SCH16TK10参数
+    // 设置SCH16TK10参数（使用config_infineon.h中的配置）
     SCH1_filter sFilter;
     SCH1_sensitivity sSensitivity;
     SCH1_decimation sDecimation;
 
     // 设置滤波器参数 (Hz)
-    sFilter.Rate12 = 30.0f;    // 陀螺仪滤波频率
-    sFilter.Acc12 = 30.0f;     // 加速度计1,2滤波频率
-    sFilter.Acc3 = 30.0f;      // 加速度计3滤波频率
+    sFilter.Rate12 = FILTER_RATE;    // 陀螺仪滤波频率
+    sFilter.Acc12 = FILTER_ACC12;    // 加速度计1,2滤波频率
+    sFilter.Acc3 = FILTER_ACC3;      // 加速度计3滤波频率
 
     // 设置灵敏度参数 (LSB/unit)
-    sSensitivity.Rate1 = 6400.0f;   // 陀螺仪1灵敏度
-    sSensitivity.Rate2 = 6400.0f;   // 陀螺仪2灵敏度
-    sSensitivity.Acc1 = 25600.0f;   // 加速度计1灵敏度
-    sSensitivity.Acc2 = 25600.0f;   // 加速度计2灵敏度
-    sSensitivity.Acc3 = 25600.0f;   // 加速度计3灵敏度
+    sSensitivity.Rate1 = SENSITIVITY_RATE1;   // 陀螺仪1灵敏度
+    sSensitivity.Rate2 = SENSITIVITY_RATE2;   // 陀螺仪2灵敏度
+    sSensitivity.Acc1 = SENSITIVITY_ACC1;     // 加速度计1灵敏度
+    sSensitivity.Acc2 = SENSITIVITY_ACC2;     // 加速度计2灵敏度
+    sSensitivity.Acc3 = SENSITIVITY_ACC3;     // 加速度计3灵敏度
 
     // 设置抽取参数
-    sDecimation.Rate2 = 1;    // 陀螺仪2抽取率
-    sDecimation.Acc2 = 1;     // 加速度计2抽取率
+    sDecimation.Rate2 = DECIMATION_RATE;   // 陀螺仪2抽取率
+    sDecimation.Acc2 = DECIMATION_ACC;     // 加速度计2抽取率
 
     // 初始化传感器
     int init_result = SCH1_init(sFilter, sSensitivity, sDecimation, false);
@@ -426,10 +501,19 @@ static imu_status_enum imu_apply_calibration(void)
                 imu_attitude_system.raw_data.gyro_bias.y = imu_attitude_system.calibration.gyro_sum.y / samples;
                 imu_attitude_system.raw_data.gyro_bias.z = imu_attitude_system.calibration.gyro_sum.z / samples;
                 
-                // 加速度计校准：假设校准期间设备静止，Z轴应该接近重力加速度
-                imu_attitude_system.raw_data.accel_bias.x = imu_attitude_system.calibration.accel_sum.x / samples;
-                imu_attitude_system.raw_data.accel_bias.y = imu_attitude_system.calibration.accel_sum.y / samples;
-                imu_attitude_system.raw_data.accel_bias.z = imu_attitude_system.calibration.accel_sum.z / samples - 9.81f;
+                // 计算静止时的平均加速度
+                float accel_avg_x = imu_attitude_system.calibration.accel_sum.x / samples;
+                float accel_avg_y = imu_attitude_system.calibration.accel_sum.y / samples;
+                float accel_avg_z = imu_attitude_system.calibration.accel_sum.z / samples;
+                
+                // 计算静止时的加速度幅值作为参考重力加速度
+                imu_attitude_system.calibration.reference_gravity = 
+                    sqrtf(accel_avg_x * accel_avg_x + accel_avg_y * accel_avg_y + accel_avg_z * accel_avg_z);
+                
+                // 加速度计校准：假设校准期间设备静止，计算零偏
+                imu_attitude_system.raw_data.accel_bias.x = accel_avg_x;
+                imu_attitude_system.raw_data.accel_bias.y = accel_avg_y;
+                imu_attitude_system.raw_data.accel_bias.z = accel_avg_z - imu_attitude_system.calibration.reference_gravity;
                 
                 printf("IMU校准完成！\r\n");
                 printf("陀螺仪零偏: [%.4f, %.4f, %.4f] rad/s\r\n", 
@@ -440,6 +524,8 @@ static imu_status_enum imu_apply_calibration(void)
                        imu_attitude_system.raw_data.accel_bias.x,
                        imu_attitude_system.raw_data.accel_bias.y,
                        imu_attitude_system.raw_data.accel_bias.z);
+                printf("参考重力加速度: %.4f m/s? (自适应校准)\r\n",
+                       imu_attitude_system.calibration.reference_gravity);
             }
             
             imu_attitude_system.calibration.calibration_enabled = 0;
@@ -826,7 +912,10 @@ static imu_status_enum imu_kalman_filter_update(void)
     
     // 2. 更新步骤（使用加速度计数据）
     float accel_norm = sqrtf(accel->x * accel->x + accel->y * accel->y + accel->z * accel->z);
-    if(accel_norm > 0.5f && accel_norm < 15.0f)  // 只在合理的加速度范围内使用
+    // 只在加速度幅值接近参考重力加速度时才使用加速度计校正 (允许±50%的偏差)
+    float accel_min = imu_attitude_system.calibration.reference_gravity * 0.5f;
+    float accel_max = imu_attitude_system.calibration.reference_gravity * 1.5f;
+    if(accel_norm >= accel_min && accel_norm <= accel_max)
     {
         imu_kalman_update_accel(accel);
     }
@@ -1133,8 +1222,24 @@ static imu_status_enum imu_madgwick_filter_update(void)
     imu_vector3_t *gyro = &imu_attitude_system.processed_data.gyro_filtered;
     imu_vector3_t *accel = &imu_attitude_system.processed_data.accel_filtered;
     
-    // 调用Madgwick算法更新
-    imu_madgwick_update_imu(dt, gyro, accel);
+    // 检查加速度计幅值是否接近参考重力加速度 (允许±50%的偏差)
+    float accel_norm = sqrtf(accel->x * accel->x + accel->y * accel->y + accel->z * accel->z);
+    float accel_min = imu_attitude_system.calibration.reference_gravity * 0.5f;
+    float accel_max = imu_attitude_system.calibration.reference_gravity * 1.5f;
+    
+    // 只在加速度幅值合理时才使用加速度计校正
+    // 否则只用陀螺仪积分(避免动态加速度干扰)
+    if(accel_norm >= accel_min && accel_norm <= accel_max)
+    {
+        // 调用Madgwick算法更新(含加速度计校正)
+        imu_madgwick_update_imu(dt, gyro, accel);
+    }
+    else
+    {
+        // 仅使用陀螺仪更新
+        imu_vector3_t zero_accel = {0.0f, 0.0f, 0.0f};
+        imu_madgwick_update_imu(dt, gyro, &zero_accel);
+    }
     
     mf->update_count++;
     
@@ -1413,14 +1518,50 @@ static imu_status_enum imu_ukf_filter_update(void)
     imu_vector3_t *gyro = &imu_attitude_system.processed_data.gyro_filtered;
     imu_vector3_t *accel = &imu_attitude_system.processed_data.accel_filtered;
     
+    // 检测NaN - 在预测前检查状态
+    for(int i = 0; i < IMU_UKF_STATE_SIZE; i++)
+    {
+        if(isnan(ukf->state[i]) || isinf(ukf->state[i]))
+        {
+            printf("检测到UKF状态NaN/Inf，重新初始化 state[%d]=%.3f\r\n", i, ukf->state[i]);
+            imu_ukf_init();
+            return IMU_STATUS_ERROR;
+        }
+    }
+    
     // 1. 预测步骤
     imu_ukf_predict(dt, gyro);
     
+    // 检测NaN - 在预测后检查状态
+    for(int i = 0; i < IMU_UKF_STATE_SIZE; i++)
+    {
+        if(isnan(ukf->state[i]) || isinf(ukf->state[i]))
+        {
+            printf("预测后检测到UKF状态NaN/Inf，重新初始化 state[%d]=%.3f\r\n", i, ukf->state[i]);
+            imu_ukf_init();
+            return IMU_STATUS_ERROR;
+        }
+    }
+    
     // 2. 更新步骤（使用加速度计数据）
     float accel_norm = sqrtf(accel->x * accel->x + accel->y * accel->y + accel->z * accel->z);
-    if(accel_norm > 0.5f && accel_norm < 15.0f)  // 只在合理的加速度范围内使用
+    // 只在加速度幅值接近参考重力加速度时才使用加速度计校正 (允许±50%的偏差)
+    float accel_min = imu_attitude_system.calibration.reference_gravity * 0.5f;
+    float accel_max = imu_attitude_system.calibration.reference_gravity * 1.5f;
+    if(accel_norm >= accel_min && accel_norm <= accel_max)
     {
         imu_ukf_update_accel(accel);
+        
+        // 检测NaN - 在更新后检查状态
+        for(int i = 0; i < IMU_UKF_STATE_SIZE; i++)
+        {
+            if(isnan(ukf->state[i]) || isinf(ukf->state[i]))
+            {
+                printf("更新后检测到UKF状态NaN/Inf，重新初始化 state[%d]=%.3f\r\n", i, ukf->state[i]);
+                imu_ukf_init();
+                return IMU_STATUS_ERROR;
+            }
+        }
     }
     
     // 3. 更新输出四元数
@@ -1482,12 +1623,20 @@ static void imu_ukf_generate_sigma_points(void)
                            ukf->sigma_points[i][1] * ukf->sigma_points[i][1] + 
                            ukf->sigma_points[i][2] * ukf->sigma_points[i][2] + 
                            ukf->sigma_points[i][3] * ukf->sigma_points[i][3]);
-        if(q_norm > 0.0f)
+        if(q_norm > 0.001f)
         {
             ukf->sigma_points[i][0] /= q_norm;
             ukf->sigma_points[i][1] /= q_norm;
             ukf->sigma_points[i][2] /= q_norm;
             ukf->sigma_points[i][3] /= q_norm;
+        }
+        else
+        {
+            // 如果四元数模长异常，重置为单位四元数
+            ukf->sigma_points[i][0] = 1.0f;
+            ukf->sigma_points[i][1] = 0.0f;
+            ukf->sigma_points[i][2] = 0.0f;
+            ukf->sigma_points[i][3] = 0.0f;
         }
     }
 }
@@ -1536,12 +1685,20 @@ static void imu_ukf_predict(float dt, imu_vector3_t *gyro)
                            ukf->sigma_points[i][1] * ukf->sigma_points[i][1] + 
                            ukf->sigma_points[i][2] * ukf->sigma_points[i][2] + 
                            ukf->sigma_points[i][3] * ukf->sigma_points[i][3]);
-        if(q_norm > 0.0f)
+        if(q_norm > 0.001f)
         {
             ukf->sigma_points[i][0] /= q_norm;
             ukf->sigma_points[i][1] /= q_norm;
             ukf->sigma_points[i][2] /= q_norm;
             ukf->sigma_points[i][3] /= q_norm;
+        }
+        else
+        {
+            // 如果四元数模长异常，重置为单位四元数
+            ukf->sigma_points[i][0] = 1.0f;
+            ukf->sigma_points[i][1] = 0.0f;
+            ukf->sigma_points[i][2] = 0.0f;
+            ukf->sigma_points[i][3] = 0.0f;
         }
     }
     
@@ -1558,12 +1715,20 @@ static void imu_ukf_predict(float dt, imu_vector3_t *gyro)
     // 归一化预测的四元数
     float q_norm = sqrtf(ukf->state[0] * ukf->state[0] + ukf->state[1] * ukf->state[1] + 
                         ukf->state[2] * ukf->state[2] + ukf->state[3] * ukf->state[3]);
-    if(q_norm > 0.0f)
+    if(q_norm > 0.001f)
     {
         ukf->state[0] /= q_norm;
         ukf->state[1] /= q_norm;
         ukf->state[2] /= q_norm;
         ukf->state[3] /= q_norm;
+    }
+    else
+    {
+        // 如果四元数模长异常，重置为单位四元数
+        ukf->state[0] = 1.0f;
+        ukf->state[1] = 0.0f;
+        ukf->state[2] = 0.0f;
+        ukf->state[3] = 0.0f;
     }
     
     // 4. 计算预测的协方差矩阵
@@ -1672,6 +1837,14 @@ static void imu_ukf_update_accel(imu_vector3_t *accel)
     // 6. 计算创新（残差）
     float innovation[IMU_UKF_MEASUREMENT_SIZE];
     float accel_norm = sqrtf(accel->x * accel->x + accel->y * accel->y + accel->z * accel->z);
+    
+    // 保护：如果加速度模长异常，不进行更新
+    if(accel_norm < 0.1f || accel_norm > 20.0f)
+    {
+        // 加速度数据异常，跳过本次更新
+        return;
+    }
+    
     innovation[0] = accel->x / accel_norm - z_mean[0];
     innovation[1] = accel->y / accel_norm - z_mean[1];
     innovation[2] = accel->z / accel_norm - z_mean[2];

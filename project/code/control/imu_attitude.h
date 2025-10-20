@@ -23,12 +23,14 @@
 #include "zf_common_typedef.h"
 
 //=================================================配置参数定义================================================
-#define IMU_ATTITUDE_UPDATE_FREQ        (100.0f)        // 姿态更新频率 (Hz) 
+#define IMU_ATTITUDE_UPDATE_FREQ        (1000.0f)        // 姿态更新频率 (Hz) 
 #define IMU_COMPLEMENTARY_ALPHA         (0.98f)         // 互补滤波器系数
 #define IMU_MAHONY_KP                   (2.0f)          // Mahony滤波器比例增益
 #define IMU_MAHONY_KI                   (0.0f)          // Mahony滤波器积分增益
 #define IMU_GYRO_THRESHOLD              (0.01f)         // 陀螺仪阈值 (rad/s)
-#define IMU_ACCEL_THRESHOLD             (0.1f)          // 加速度计阈值 (m/s?)
+#define IMU_ACCEL_THRESHOLD             (0.98f)         // 加速度计阈值 (m/s?)
+#define IMU_GYRO_LPF_ALPHA              (0.2f)          // 陀螺仪低通滤波系数 (0~1)
+#define IMU_ACCEL_LPF_ALPHA             (0.2f)          // 加速度计低通滤波系数 (0~1)
 
 // 卡尔曼滤波器参数
 #define IMU_KALMAN_Q_GYRO               (0.001f)        // 陀螺仪过程噪声
@@ -38,7 +40,7 @@
 #define IMU_KALMAN_MEASUREMENT_SIZE     (3)             // 测量向量维度 (加速度计3轴)
 
 // Madgwick滤波器参数
-#define IMU_MADGWICK_BETA_DEFAULT       (0.1f)          // Madgwick算法β参数
+#define IMU_MADGWICK_BETA_DEFAULT       (0.033f)        // Madgwick算法β参数 (降低以减少噪声敏感度)
 #define IMU_MADGWICK_BETA_MIN           (0.01f)         // β最小值
 #define IMU_MADGWICK_BETA_MAX           (0.5f)          // β最大值
 #define IMU_MADGWICK_ZETA               (0.0f)          // Madgwick算法ζ参数
@@ -47,17 +49,20 @@
 #define IMU_UKF_STATE_SIZE              (7)             // UKF状态向量维度 (四元数4 + 陀螺仪偏差3)
 #define IMU_UKF_MEASUREMENT_SIZE        (3)             // UKF测量向量维度 (加速度计3轴)
 #define IMU_UKF_SIGMA_POINTS            (15)            // Sigma点数量 (2n+1)
-#define IMU_UKF_ALPHA                   (0.001f)        // UKF缩放参数α
+#define IMU_UKF_ALPHA                   (0.1f)          // UKF缩放参数α (增大以改善Sigma点分布)
 #define IMU_UKF_BETA                    (2.0f)          // UKF分布参数β
 #define IMU_UKF_KAPPA                   (0.0f)          // UKF缩放参数κ
 #define IMU_UKF_Q_GYRO                  (0.001f)        // UKF陀螺仪过程噪声
 #define IMU_UKF_Q_BIAS                  (0.0001f)       // UKF陀螺仪偏差过程噪声
-#define IMU_UKF_R_ACCEL                 (0.5f)          // UKF加速度计测量噪声
+#define IMU_UKF_R_ACCEL                 (0.1f)          // UKF加速度计测量噪声 (降低以提高稳定性)
 
 // 避免M_PI重复定义
 #ifndef M_PI
 #define M_PI                            (3.1415926f)     // 圆周率
 #endif
+
+// 重力加速度定义（标准重力加速度）
+#define IMU_GRAVITY_ACCEL               (9.8f)         // 重力加速度 (m/s?)
 
 //=================================================枚举类型定义================================================
 // IMU状态枚举
@@ -134,6 +139,7 @@ typedef struct
     uint32 calibration_samples;     // 校准样本数
     imu_vector3_t gyro_sum;         // 陀螺仪累计值
     imu_vector3_t accel_sum;        // 加速度计累计值
+    float reference_gravity;        // 参考重力加速度幅值 (自适应校准得到)
 } imu_calibration_t;
 
 // 卡尔曼滤波器状态结构体

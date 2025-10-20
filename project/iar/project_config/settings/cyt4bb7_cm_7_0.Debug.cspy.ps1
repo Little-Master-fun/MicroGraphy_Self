@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "D:\IAR\common\bin\cspybat" -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --backend -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
+& "D:\IAR\common\bin\cspybat" -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --backend -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
 }
 else
 {
-& "D:\IAR\common\bin\cspybat" -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --debug_file=$debugfile --backend -f "F:\AutoCar\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
+& "D:\IAR\common\bin\cspybat" -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.general.xcl" --debug_file=$debugfile --backend -f "F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\settings\cyt4bb7_cm_7_0.Debug.driver.xcl" 
 }

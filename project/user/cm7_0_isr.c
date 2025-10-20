@@ -38,28 +38,38 @@
 #include "driver_encoder.h"
 #include "motor_control.h"
 #include "imu_attitude.h"
+#include "imu_ahrs_complementary.h"
+#include "driver_sch16tk10.h"
+
+// **************************** 全局变量定义 ****************************
 
 // **************************** PIT中断函数 ****************************
-void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数      
+void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数    5ms  
 {
     pit_isr_flag_clear(PIT_CH0);
-    
+    imu_update_from_sensor();
+    imu_attitude_update();
     
 }
 
-void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数      
+void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     2ms 
 {
     pit_isr_flag_clear(PIT_CH1);
     motor_control_update();
     
 }
 
-void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      
+void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      1ms
 {
     pit_isr_flag_clear(PIT_CH2);
-    imu_update_from_sensor();
-    imu_attitude_update();
     
+    // 获取传感器原始数据
+    SCH1_raw_data raw_data;
+    SCH1_getData(&raw_data);
+    
+    
+    // 更新AHRS（函数内部会自动处理累加平均、校准和姿态解算）
+    ahrs_complementary_update(&raw_data);
 }
 
 void pit0_ch10_isr()                    // 定时器通道 10 周期中断服务函数      

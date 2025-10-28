@@ -39,12 +39,14 @@
 #include "test_encoder.h"
 #include "test_sch16tk10.h"
 #include "test_imu.h"
+#include "test_nav_ahrs.h"
 
 #include "driver_encoder.h"
 #include "driver_motor.h"
 #include "motor_control.h"
 #include "imu_attitude.h"
 #include "imu_ahrs_complementary.h"
+#include "nav_control_ahrs.h"
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
@@ -61,26 +63,26 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
     
-    
+    nav_ahrs_init();
     motor_pid_init();
     motor_init();
     encoder_init();
-    imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
-    ahrs_complementary_init();
-
-
+    // imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
+    // ahrs_complementary_init();
+    // nav_ahrs_generate_square_path(1.0f);
     
+    
+    pit_ms_init(PIT_CH1, 2); //电机闭环
+    pit_ms_init(PIT_CH2, 1); //IMU原始数据
     
     
     // 延时等待系统稳定
-    system_delay_ms(600);
-    pit_ms_init(PIT_CH1, 2); //导航算法
-    pit_ms_init(PIT_CH2, 1); //IMU原始数据
-    pit_ms_init(PIT_CH0, 5); //IMU姿态解算
+    system_delay_ms(7000);
+    pit_ms_init(PIT_CH0, 5); //导航算法
+    // nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
     //test_nav_system();
     //test_encoder_simple();
     //test_imu_system();
-
     
 
     // 6. 测试结束后的处理

@@ -74,6 +74,16 @@ encoder_status_enum encoder_update(void)
     status |= encoder_read_single(ENCODER_ID_LEFT);
     status |= encoder_read_single(ENCODER_ID_RIGHT);
     
+    // 计算系统总距离（取左右轮平均）
+    encoder_system.total_distance = (encoder_system.left.distance_mm + encoder_system.right.distance_mm) / 2.0f;
+    
+    // 计算线速度（取左右轮平均）
+    encoder_system.linear_velocity = (encoder_system.left.speed_mps + encoder_system.right.speed_mps) / 2.0f;
+    
+    // 计算角速度（假设轮距为ENCODER_WHEEL_BASE mm）
+    // angular_velocity = (right_speed - left_speed) / wheel_base
+    // encoder_system.angular_velocity = (encoder_system.right.speed_mps - encoder_system.left.speed_mps) / (ENCODER_WHEEL_BASE / 1000.0f);
+    
     return status;
 }
 
@@ -239,6 +249,15 @@ encoder_status_enum encoder_reset(encoder_id_enum encoder_id)
     if (encoder_id == ENCODER_ID_RIGHT || encoder_id == ENCODER_ID_BOTH)
     {
         encoder_reset_single(ENCODER_ID_RIGHT);
+    }
+    
+    // 如果重置所有编码器，也重置系统数据
+    if (encoder_id == ENCODER_ID_BOTH)
+    {
+        encoder_system.total_distance = 0.0f;
+        encoder_system.linear_velocity = 0.0f;
+        encoder_system.angular_velocity = 0.0f;
+        encoder_system.heading_angle = 0.0f;
     }
     
     return ENCODER_STATUS_OK;

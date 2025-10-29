@@ -66,18 +66,18 @@ void dual_core_update_sensor_data(void)
     // 注意：gyro_z需要从IMU原始数据中获取，这里暂时设为0，实际使用时需要完善
     shared_core0_data.gyro_z = 0.0f;  // TODO: 从IMU获取Z轴角速度
     
-    // 读取编码器数据
-    shared_core0_data.encoder_left = encoder_get_pulse(ENCODER_ID_LEFT);
-    shared_core0_data.encoder_right = encoder_get_pulse(ENCODER_ID_RIGHT);
+    // 读取编码器数据（encoder_update()已计算好距离）
+    extern encoder_system_struct encoder_system;
+    shared_core0_data.encoder_left = encoder_system.left.total_pulse;
+    shared_core0_data.encoder_right = encoder_system.right.total_pulse;
     
-    // 读取导航位置数据（如果有）
-    if (nav_ahrs.initialized) {
-        shared_core0_data.distance = nav_ahrs.current_distance;
-        // 位置坐标需要通过里程计计算，这里使用累积距离
-        shared_core0_data.position_x = 0.0f;  // TODO: 添加位置计算
-        shared_core0_data.position_y = 0.0f;
-        shared_core0_data.velocity = (nav_ahrs.left_speed + nav_ahrs.right_speed) / 2.0f;
-    }
+    // 读取编码器累积距离（已自动计算，单位mm）
+    shared_core0_data.distance = encoder_system.total_distance;
+    shared_core0_data.position_x = 0.0f;  // TODO: 添加位置计算
+    shared_core0_data.position_y = 0.0f;
+    
+    // 读取速度（m/s）
+    shared_core0_data.velocity = encoder_system.linear_velocity;
     
     shared_core0_data.data_valid = 1;
     shared_core0_data.timestamp = core0_timestamp;

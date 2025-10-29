@@ -16,6 +16,7 @@
 #include "imu_ahrs_complementary.h"
 #include "driver_encoder.h"
 #include "motor_control.h"
+#include "dual_core_comm.h"
 #include "zf_common_headfile.h"
 #include <stdio.h>
 #include <string.h>
@@ -108,8 +109,8 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     // 4. 角度PID控制
     nav_ahrs_angle_pid_control();
     
-    // 5. 设置电机目标速度
-    motor_set_target_speed(nav_ahrs.left_speed, nav_ahrs.right_speed);
+    // 5. 计算的目标速度会通过共享内存发送给CM7_0
+    // CM7_0会调用motor_set_target_speed(nav_ahrs.left_speed, nav_ahrs.right_speed);
     
     // 6. 检查是否完成一圈
     if (nav_ahrs.path.current_index >= nav_ahrs.path.total_points - 1) {
@@ -117,14 +118,14 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
             // 循环模式，重置到起点
             nav_ahrs.path.current_index = 0;
             nav_ahrs.current_distance = 0.0f;
-            encoder_reset(ENCODER_ID_BOTH);
+            // 注意：双核架构中，编码器重置由CM7_0负责
             printf("[NAV_AHRS] 完成一圈，重新开始\n");
         } else {
             // 非循环模式，停车
             nav_ahrs.mode = NAV_AHRS_MODE_IDLE;
             nav_ahrs.left_speed = 0.0f;
             nav_ahrs.right_speed = 0.0f;
-            motor_set_target_speed(0.0f, 0.0f);
+            // 速度会通过共享内存发送给CM7_0，CM7_0会停止电机
             printf("[NAV_AHRS] 路径完成\n");
             return NAV_AHRS_STATUS_PATH_END;
         }
@@ -193,11 +194,8 @@ nav_ahrs_status_enum nav_ahrs_reset(void)
     nav_ahrs.left_speed = 0.0f;
     nav_ahrs.right_speed = 0.0f;
     
-    // 重置编码器
-    encoder_reset(ENCODER_ID_BOTH);
-    
-    // 停止电机
-    motor_set_target_speed(0.0f, 0.0f);
+    // 双核架构：编码器重置和电机停止由CM7_0负责
+    // CM7_0会通过共享内存接收到速度为0的指令并停止电机
     
     printf("[NAV_AHRS] 导航系统已重置\n");
     return NAV_AHRS_STATUS_OK;
@@ -240,25 +238,21 @@ nav_ahrs_status_enum nav_ahrs_set_pid(uint8 is_turn, float kp, float ki, float k
 //=================================================内部函数实现================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     更新当前状态
+// 函数简介     更新当前状态（从共享内存读取CM7_0的数据）
 //-------------------------------------------------------------------------------------------------------------------
 static nav_ahrs_status_enum nav_ahrs_update_state(void)
 {
-    // 1. 更新编码器数据
-    encoder_update();
-    
-    // 2. 获取左右轮累积距离 (mm)
-    nav_ahrs.left_distance = encoder_get_distance(ENCODER_ID_LEFT);
-    nav_ahrs.right_distance = encoder_get_distance(ENCODER_ID_RIGHT);
-    
-    // 3. 计算累积距离（取平均）
-    nav_ahrs.current_distance = (nav_ahrs.left_distance + nav_ahrs.right_distance) / 2.0f;
-    
-    // 4. 获取当前航向角
-    ahrs_euler_angles_t euler;
-    if (ahrs_get_euler_angles(&euler) == AHRS_STATUS_OK) {
-        nav_ahrs.current_yaw = euler.yaw_accumulated;  // 使用累积航向角
+    // 1. 从共享内存读取传感器数据（CM7_0已采集）
+    // 检查数据有效性
+    if (!shared_core0_data.data_valid) {
+        return NAV_AHRS_STATUS_ERROR;
     }
+    
+    // 2. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
+    nav_ahrs.current_distance = shared_core0_data.distance;  // 单位: mm
+    
+    // 3. 获取当前航向角 - 从共享内存
+    nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
     
     // 5. 更新当前路径点索引
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {

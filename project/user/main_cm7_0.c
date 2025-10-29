@@ -88,8 +88,7 @@ int main(void)
     // 主循环
     while(true)
     {
-        // CM7_0主循环可以执行一些低优先级任务
-        // 例如：显示屏更新、日志输出等
+
         
         system_delay_ms(100);
     }

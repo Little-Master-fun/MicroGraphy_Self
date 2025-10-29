@@ -67,8 +67,8 @@ int main(void)
     motor_pid_init();
     motor_init();
     encoder_init();
-    // imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
-    // ahrs_complementary_init();
+    imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
+    ahrs_complementary_init();
     // nav_ahrs_generate_square_path(1.0f);
     
     
@@ -77,8 +77,10 @@ int main(void)
     
     
     // 延时等待系统稳定
-    system_delay_ms(7000);
+    //system_delay_ms(1000);
+    test_nav_ahrs_generate_straight_path(1.0f,0.0f);
     pit_ms_init(PIT_CH0, 5); //导航算法
+    
     // nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
     //test_nav_system();
     //test_encoder_simple();

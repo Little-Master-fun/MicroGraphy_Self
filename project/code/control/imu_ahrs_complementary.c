@@ -28,7 +28,7 @@
 #include <math.h>
 
 //=================================================常量定义================================================
-#define DELTA_T              0.00059f         // 更新周期 1ms (需与AVG_FACTOR配合)
+#define DELTA_T              0.0004f         // 更新周期 1ms (需与AVG_FACTOR配合)
 // #define DELTA_T              0.000563f        // 更新周期 1ms (需与AVG_FACTOR配合)
 #define ALPHA                1.0f           // 加速度计低通滤波系数
 #define G_TO_M_S2            9.80665f       // 重力加速度转换系数

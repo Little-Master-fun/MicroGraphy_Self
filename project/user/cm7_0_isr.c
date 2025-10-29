@@ -41,6 +41,7 @@
 #include "imu_ahrs_complementary.h"
 #include "driver_sch16tk10.h"
 #include "nav_control_ahrs.h"
+#include "test_nav_ahrs.h"
 
 // **************************** 全局变量定义 ****************************
 
@@ -48,9 +49,12 @@
 void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数    5ms  
 {
     pit_isr_flag_clear(PIT_CH0);
-    // imu_update_from_sensor();
-    // imu_attitude_update();
-    // nav_ahrs_update(0.005f);
+    
+    
+    nav_ahrs_update(0.005);
+    
+    
+    nav_ahrs_get_motor_output(NULL, NULL);
     
 }
 

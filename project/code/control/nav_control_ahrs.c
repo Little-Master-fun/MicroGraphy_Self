@@ -312,7 +312,7 @@ static nav_ahrs_status_enum nav_ahrs_find_lookahead_point(void)
 //-------------------------------------------------------------------------------------------------------------------
 static float nav_ahrs_calculate_curvature(uint16 idx)
 {
-    // 使用三个点计算曲率（类似dog项目）
+    // 使用三个点计算曲率
     if (idx < 2 || idx >= nav_ahrs.path.total_points - 2) {
         return 0.0f;
     }

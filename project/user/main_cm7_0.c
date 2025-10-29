@@ -64,39 +64,26 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
     
-    printf("\n");
-    printf("╔════════════════════════════════════════════╗\n");
-    printf("║     CM7_0核心：数据采集与底层控制         ║\n");
-    printf("╚════════════════════════════════════════════╝\n\n");
-    
     // 1. 初始化双核通信
-    printf("[CM7_0] 初始化双核通信...\n");
     dual_core_comm_init_core0();
     
     // 2. 初始化电机控制
-    printf("[CM7_0] 初始化电机控制...\n");
     motor_pid_init();
     motor_init();
     
     // 3. 初始化编码器
-    printf("[CM7_0] 初始化编码器...\n");
     encoder_init();
     
     // 4. 初始化AHRS姿态解算
-    printf("[CM7_0] 初始化AHRS姿态解算...\n");
     ahrs_complementary_init();
     
     // 5. 延时等待IMU稳定
-    printf("[CM7_0] 等待传感器稳定...\n");
     system_delay_ms(1000);
     
     // 6. 启动定时器中断
-    printf("[CM7_0] 启动定时器中断...\n");
     pit_ms_init(PIT_CH2, 1);  // IMU数据采集 (1ms)
     pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
     pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
-    
-    printf("[CM7_0] 初始化完成！等待CM7_1启动...\n\n");
     
     // 主循环
     while(true)

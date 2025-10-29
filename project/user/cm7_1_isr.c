@@ -43,9 +43,27 @@
 // **************************** PIT中断函数 ****************************
 // CM7_1核心：负责导航算法和决策
 
-void pit1_ch0_isr()                     // 定时器通道 0 周期中断服务函数    5ms  
+void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数
 {
     pit_isr_flag_clear(PIT_CH0);
+    
+}
+
+void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     
+{
+    pit_isr_flag_clear(PIT_CH1);
+    
+}
+
+void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      
+{
+    pit_isr_flag_clear(PIT_CH2);
+    
+}
+
+void pit0_ch10_isr()                    // 定时器通道 10 周期中断服务函数    5ms (CM7_1导航算法)      
+{
+    pit_isr_flag_clear(PIT_CH10);
     
     // 读取CM7_0发送的传感器数据
     dual_core_read_sensor_data();
@@ -55,89 +73,69 @@ void pit1_ch0_isr()                     // 定时器通道 0 周期中断服务函数    5ms
     
     // 将控制指令发送到CM7_0
     dual_core_update_control_data();
-    
 }
 
-void pit1_ch1_isr()                     // 定时器通道 1 周期中断服务函数     
-{
-    pit_isr_flag_clear(PIT_CH1);
-    
-}
-
-void pit1_ch2_isr()                     // 定时器通道 2 周期中断服务函数      
-{
-    pit_isr_flag_clear(PIT_CH2);
-    
-}
-
-void pit1_ch10_isr()                    // 定时器通道 10 周期中断服务函数      
-{
-    pit_isr_flag_clear(PIT_CH10);
-
-    
-}
-
-void pit1_ch11_isr()                    // 定时器通道 11 周期中断服务函数      
+void pit0_ch11_isr()                    // 定时器通道 11 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH11);
     
 }
 
-void pit1_ch12_isr()                    // 定时器通道 12 周期中断服务函数      
+void pit0_ch12_isr()                    // 定时器通道 12 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH12);
     
 }
 
-void pit1_ch13_isr()                    // 定时器通道 13 周期中断服务函数      
+void pit0_ch13_isr()                    // 定时器通道 13 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH13);
     
 }
 
-void pit1_ch14_isr()                    // 定时器通道 14 周期中断服务函数      
+void pit0_ch14_isr()                    // 定时器通道 14 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH14);
     
 }
 
-void pit1_ch15_isr()                    // 定时器通道 15 周期中断服务函数      
+void pit0_ch15_isr()                    // 定时器通道 15 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH15);
     
 }
 
-void pit1_ch16_isr()                    // 定时器通道 16 周期中断服务函数      
+void pit0_ch16_isr()                    // 定时器通道 16 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH16);
     
 }
 
-void pit1_ch17_isr()                    // 定时器通道 17 周期中断服务函数      
+void pit0_ch17_isr()                    // 定时器通道 17 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH17);
     
 }
 
-void pit1_ch18_isr()                    // 定时器通道 18 周期中断服务函数      
+void pit0_ch18_isr()                    // 定时器通道 18 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH18);
     
 }
 
-void pit1_ch19_isr()                    // 定时器通道 19 周期中断服务函数      
+void pit0_ch19_isr()                    // 定时器通道 19 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH19);
     
 }
 
-void pit1_ch20_isr()                    // 定时器通道 20 周期中断服务函数      
+void pit0_ch20_isr()                    // 定时器通道 20 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH20);
     
 }
 
-void pit1_ch21_isr()                    // 定时器通道 21 周期中断服务函数      
+void pit0_ch21_isr()                    // 定时器通道 21 周期中断服务函数      
 {
     pit_isr_flag_clear(PIT_CH21);
     

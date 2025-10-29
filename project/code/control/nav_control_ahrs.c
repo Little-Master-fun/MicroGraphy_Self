@@ -29,7 +29,6 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void);
 static nav_ahrs_status_enum nav_ahrs_find_lookahead_point(void);
 static float nav_ahrs_calculate_curvature(uint16 idx);
 static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void);
-static float nav_ahrs_normalize_angle(float angle);
 static float nav_ahrs_angle_difference(float target, float current);
 
 //=================================================外部接口实现================================================
@@ -318,7 +317,6 @@ static float nav_ahrs_calculate_curvature(uint16 idx)
     }
     
     float theta1 = nav_ahrs.path.points[idx - 2].yaw;
-    float theta2 = nav_ahrs.path.points[idx].yaw;
     float theta3 = nav_ahrs.path.points[idx + 2].yaw;
     
     float d12 = nav_ahrs.path.points[idx].distance - nav_ahrs.path.points[idx - 2].distance;
@@ -405,16 +403,6 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
     if (nav_ahrs.right_speed < -max_speed) nav_ahrs.right_speed = -max_speed;
     
     return NAV_AHRS_STATUS_OK;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     角度归一化到[-180, 180]
-//-------------------------------------------------------------------------------------------------------------------
-static float nav_ahrs_normalize_angle(float angle)
-{
-    while (angle > 180.0f) angle -= 360.0f;
-    while (angle <= -180.0f) angle += 360.0f;
-    return angle;
 }
 
 //-------------------------------------------------------------------------------------------------------------------

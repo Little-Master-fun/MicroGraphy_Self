@@ -35,25 +35,26 @@
 
 #include "zf_common_headfile.h"
 
-#include "test_motor.h"
-#include "test_encoder.h"
-#include "test_sch16tk10.h"
-#include "test_imu.h"
-#include "test_nav_ahrs.h"
-
 #include "driver_encoder.h"
 #include "driver_motor.h"
 #include "motor_control.h"
-#include "imu_attitude.h"
 #include "imu_ahrs_complementary.h"
-#include "nav_control_ahrs.h"
+#include "dual_core_comm.h"
+
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
 
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
+// 双核架构说明：
+// CM7_0核心：数据采集和底层控制
+//   - IMU数据采集与AHRS姿态解算 (1ms)
+//   - 编码器数据读取
+//   - 电机PWM控制 (2ms)
+//   - 传感器数据共享给CM7_1 (5ms)
+// CM7_1核心：导航算法和决策
+//   - 导航算法计算 (5ms)
+//   - 路径规划
+//   - 控制指令发送给CM7_0
 
 // **************************** 代码区域 ****************************
 
@@ -63,38 +64,47 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
     
-    nav_ahrs_init();
+    printf("\n");
+    printf("╔════════════════════════════════════════════╗\n");
+    printf("║     CM7_0核心：数据采集与底层控制         ║\n");
+    printf("╚════════════════════════════════════════════╝\n\n");
+    
+    // 1. 初始化双核通信
+    printf("[CM7_0] 初始化双核通信...\n");
+    dual_core_comm_init_core0();
+    
+    // 2. 初始化电机控制
+    printf("[CM7_0] 初始化电机控制...\n");
     motor_pid_init();
     motor_init();
+    
+    // 3. 初始化编码器
+    printf("[CM7_0] 初始化编码器...\n");
     encoder_init();
-    imu_attitude_init(IMU_MODE_SIMPLE_GYRO);
+    
+    // 4. 初始化AHRS姿态解算
+    printf("[CM7_0] 初始化AHRS姿态解算...\n");
     ahrs_complementary_init();
-    // nav_ahrs_generate_square_path(1.0f);
     
+    // 5. 延时等待IMU稳定
+    printf("[CM7_0] 等待传感器稳定...\n");
+    system_delay_ms(1000);
     
-    pit_ms_init(PIT_CH1, 2); //电机闭环
-    pit_ms_init(PIT_CH2, 1); //IMU原始数据
+    // 6. 启动定时器中断
+    printf("[CM7_0] 启动定时器中断...\n");
+    pit_ms_init(PIT_CH2, 1);  // IMU数据采集 (1ms)
+    pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
+    pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
     
+    printf("[CM7_0] 初始化完成！等待CM7_1启动...\n\n");
     
-    // 延时等待系统稳定
-    //system_delay_ms(1000);
-    test_nav_ahrs_generate_straight_path(1.0f,0.0f);
-    pit_ms_init(PIT_CH0, 5); //导航算法
-    
-    // nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
-    //test_nav_system();
-    //test_encoder_simple();
-    //test_imu_system();
-    
-
-    // 6. 测试结束后的处理
-    
-    // 此处编写用户代码 例如外设初始化代码等
+    // 主循环
     while(true)
     {
-
+        // CM7_0主循环可以执行一些低优先级任务
+        // 例如：显示屏更新、日志输出等
         
-        // 此处编写需要循环执行的代码
+        system_delay_ms(100);
     }
 }
 

@@ -34,13 +34,20 @@
 ********************************************************************************************************************/
 
 #include "zf_common_headfile.h"
+#include "nav_control_ahrs.h"
+#include "dual_core_comm.h"
+#include "test_nav_ahrs.h"
+
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
 
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
-// 本例程是开源库空工程 可用作移植或者测试各类内外设
+// 双核架构说明：
+// CM7_1核心：导航算法和决策
+//   - 从CM7_0接收传感器数据
+//   - 执行导航算法计算 (5ms)
+//   - 路径规划和决策
+//   - 发送控制指令给CM7_0
 
 // **************************** 代码区域 ****************************
 
@@ -48,21 +55,55 @@ int main(void)
 {
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_info_init();                  // 调试串口信息初始化
-     
-    // 此处编写用户代码 例如外设初始化代码等
-
-
     
-
-    // 此处编写用户代码 例如外设初始化代码等
+    printf("\n");
+    printf("╔════════════════════════════════════════════╗\n");
+    printf("║     CM7_1核心：导航算法与决策             ║\n");
+    printf("╚════════════════════════════════════════════╝\n\n");
+    
+    // 1. 初始化双核通信
+    printf("[CM7_1] 初始化双核通信...\n");
+    dual_core_comm_init_core1();
+    
+    // 2. 等待CM7_0初始化完成
+    printf("[CM7_1] 等待CM7_0初始化完成...\n");
+    system_delay_ms(2000);
+    
+    // 3. 初始化导航系统
+    printf("[CM7_1] 初始化导航系统...\n");
+    nav_ahrs_init();
+    
+    // 4. 生成测试路径（可选择正方形或直线）
+    printf("[CM7_1] 生成导航路径...\n");
+    
+    // 选项1: 生成正方形路径 (1m × 1m)
+    // test_nav_ahrs_generate_square_path(1.0f);
+    
+    // 选项2: 生成直线路径 (2m, 0度方向)
+    test_nav_ahrs_generate_straight_path(2.0f, 0.0f);
+    
+    // 5. 延时等待系统稳定
+    printf("[CM7_1] 等待系统稳定...\n");
+    system_delay_ms(1000);
+    
+    // 6. 启动导航算法定时器
+    printf("[CM7_1] 启动导航算法定时器...\n");
+    pit_ms_init(PIT_CH0, 5);  // 导航算法 (5ms)
+    
+    // 7. 启动导航
+    printf("[CM7_1] 启动导航模式...\n");
+    nav_ahrs_reset();
+    nav_ahrs_set_speed(2.5f);  // 设置基础速度 2.5 m/s
+    nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
+    
+    
+    // 主循环
+    uint32 loop_count = 0;
     while(true)
     {
-        // 此处编写需要循环执行的代码
         
-
-      
-      
-        // 此处编写需要循环执行的代码
+        
+        system_delay_ms(100);
     }
 }
 

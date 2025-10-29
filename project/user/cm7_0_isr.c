@@ -41,26 +41,30 @@
 #include "imu_ahrs_complementary.h"
 #include "driver_sch16tk10.h"
 #include "nav_control_ahrs.h"
-#include "test_nav_ahrs.h"
+#include "dual_core_comm.h"
 
 // **************************** 全局变量定义 ****************************
 
 // **************************** PIT中断函数 ****************************
+// CM7_0核心：负责数据采集和底层控制
+
 void pit0_ch0_isr()                     // 定时器通道 0 周期中断服务函数    5ms  
 {
     pit_isr_flag_clear(PIT_CH0);
     
-    
-    nav_ahrs_update(0.005);
-    
-    
-    nav_ahrs_get_motor_output(NULL, NULL);
+    // 更新传感器数据到共享内存，供CM7_1使用
+    dual_core_update_sensor_data();
     
 }
 
 void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     2ms 
 {
     pit_isr_flag_clear(PIT_CH1);
+    
+    // 读取CM7_1发送的控制指令
+    dual_core_read_control_data();
+    
+    // 执行电机控制（根据目标速度）
     motor_control_update();
     
 }
@@ -73,8 +77,7 @@ void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      1m
     SCH1_raw_data raw_data;
     SCH1_getData(&raw_data);
     
-    
-    // 更新AHRS（函数内部会自动处理累加平均、校准和姿态解算）
+    // 更新AHRS姿态解算（函数内部会自动处理累加平均、校准和姿态解算）
     ahrs_complementary_update(&raw_data);
 }
 

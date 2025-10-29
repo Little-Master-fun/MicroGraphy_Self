@@ -1146,12 +1146,6 @@
                 <name>$PROJ_DIR$\..\..\code\control\motor_control.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\code\control\nav_control.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\control\nav_control.h</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\..\code\control\nav_control_ahrs.c</name>
             </file>
             <file>
@@ -1184,6 +1178,12 @@
             <file>
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_sch16tk10.h</name>
             </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\dual_core_comm.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\dual_core_comm.h</name>
+            </file>
         </group>
         <group>
             <name>test</name>
@@ -1192,12 +1192,6 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\code\test\test_encoder.h</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\test\test_imu.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\test\test_imu.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\code\test\test_motor.c</name>

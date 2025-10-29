@@ -60,11 +60,6 @@ static void imu_init_timer(void);
 static void imu_kalman_init(void);
 static void imu_kalman_predict(float dt, imu_vector3_t *gyro);
 static void imu_kalman_update_accel(imu_vector3_t *accel);
-static void imu_matrix_multiply(float *A, float *B, float *C, int m, int n, int p);
-static void imu_matrix_transpose(float *A, float *AT, int m, int n);
-static void imu_matrix_inverse_3x3(float A[3][3], float Ainv[3][3]);
-static void imu_matrix_add(float *A, float *B, float *C, int m, int n);
-static void imu_matrix_subtract(float *A, float *B, float *C, int m, int n);
 
 // Madgwick滤波器相关函数
 static void imu_madgwick_init(void);
@@ -1086,98 +1081,6 @@ static void imu_kalman_update_accel(imu_vector3_t *accel)
         // 限制协方差最小值
         if(kf->P[i][i] < 0.001f)
             kf->P[i][i] = 0.001f;
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     矩阵乘法 (简化版本，仅用于必要计算)
-//-------------------------------------------------------------------------------------------------------------------
-static void imu_matrix_multiply(float *A, float *B, float *C, int m, int n, int p)
-{
-    // C = A * B
-    // A: m x n, B: n x p, C: m x p
-    for(int i = 0; i < m; i++)
-    {
-        for(int j = 0; j < p; j++)
-        {
-            C[i * p + j] = 0.0f;
-            for(int k = 0; k < n; k++)
-            {
-                C[i * p + j] += A[i * n + k] * B[k * p + j];
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     矩阵转置
-//-------------------------------------------------------------------------------------------------------------------
-static void imu_matrix_transpose(float *A, float *AT, int m, int n)
-{
-    // AT = A^T
-    // A: m x n, AT: n x m
-    for(int i = 0; i < m; i++)
-    {
-        for(int j = 0; j < n; j++)
-        {
-            AT[j * m + i] = A[i * n + j];
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     3x3矩阵求逆 (用于创新协方差矩阵)
-//-------------------------------------------------------------------------------------------------------------------
-static void imu_matrix_inverse_3x3(float A[3][3], float Ainv[3][3])
-{
-    float det = A[0][0] * (A[1][1] * A[2][2] - A[1][2] * A[2][1])
-              - A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0])
-              + A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
-    
-    if(fabsf(det) < 1e-6f)
-    {
-        // 矩阵奇异，使用单位矩阵
-        memset(Ainv, 0, sizeof(float) * 9);
-        Ainv[0][0] = Ainv[1][1] = Ainv[2][2] = 1.0f;
-        return;
-    }
-    
-    float inv_det = 1.0f / det;
-    
-    Ainv[0][0] = (A[1][1] * A[2][2] - A[1][2] * A[2][1]) * inv_det;
-    Ainv[0][1] = (A[0][2] * A[2][1] - A[0][1] * A[2][2]) * inv_det;
-    Ainv[0][2] = (A[0][1] * A[1][2] - A[0][2] * A[1][1]) * inv_det;
-    
-    Ainv[1][0] = (A[1][2] * A[2][0] - A[1][0] * A[2][2]) * inv_det;
-    Ainv[1][1] = (A[0][0] * A[2][2] - A[0][2] * A[2][0]) * inv_det;
-    Ainv[1][2] = (A[0][2] * A[1][0] - A[0][0] * A[1][2]) * inv_det;
-    
-    Ainv[2][0] = (A[1][0] * A[2][1] - A[1][1] * A[2][0]) * inv_det;
-    Ainv[2][1] = (A[0][1] * A[2][0] - A[0][0] * A[2][1]) * inv_det;
-    Ainv[2][2] = (A[0][0] * A[1][1] - A[0][1] * A[1][0]) * inv_det;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     矩阵加法
-//-------------------------------------------------------------------------------------------------------------------
-static void imu_matrix_add(float *A, float *B, float *C, int m, int n)
-{
-    // C = A + B
-    for(int i = 0; i < m * n; i++)
-    {
-        C[i] = A[i] + B[i];
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-// 函数简介     矩阵减法
-//-------------------------------------------------------------------------------------------------------------------
-static void imu_matrix_subtract(float *A, float *B, float *C, int m, int n)
-{
-    // C = A - B
-    for(int i = 0; i < m * n; i++)
-    {
-        C[i] = A[i] - B[i];
     }
 }
 

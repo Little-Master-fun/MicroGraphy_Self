@@ -65,8 +65,8 @@ void pit0_ch10_isr()                    // 定时器通道 10 周期中断服务函数    5ms
 {
     pit_isr_flag_clear(PIT_CH10);
     
-    // 读取CM7_0发送的传感器数据
-    dual_core_read_sensor_data();
+    // 更新数据
+    dual_core_update_control_data();
     
     // 执行导航算法更新
     nav_ahrs_update(0.005f);

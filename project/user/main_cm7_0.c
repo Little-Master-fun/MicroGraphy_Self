@@ -64,7 +64,7 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
     
-    // 1. 初始化双核通信
+    // 1. 初始化双核通信（使用DCache同步方式，不禁用DCache）
     dual_core_comm_init_core0();
     
     // 2. 初始化电机控制
@@ -77,11 +77,12 @@ int main(void)
     // 4. 初始化AHRS姿态解算
     ahrs_complementary_init();
     
+    
     // 5. 延时等待IMU稳定
     system_delay_ms(1000);
     
     // 6. 启动定时器中断
-    pit_ms_init(PIT_CH2, 1);  // IMU数据采集 (1ms)
+    pit_ms_init(PIT_CH2, 2);  // IMU数据采集 (1ms)
     pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
     pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
     

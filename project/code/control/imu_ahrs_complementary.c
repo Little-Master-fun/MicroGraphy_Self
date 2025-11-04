@@ -121,6 +121,58 @@ ahrs_status_enum ahrs_complementary_init(void)
     param_kp = 0.0f;  // 可以根据实际情况调整
     param_ki = 0.0f;  // 可以根据实际情况调整
     
+    // 初始化SCH16TK10传感器
+    printf("正在初始化SCH16TK10传感器...\r\n");
+    
+    SCH1_filter sFilter;
+    SCH1_sensitivity sSensitivity;
+    SCH1_decimation sDecimation;
+
+    // 设置滤波器参数 (Hz)
+    sFilter.Rate12 = FILTER_RATE;    // 陀螺仪滤波频率
+    sFilter.Acc12 = FILTER_ACC12;    // 加速度计1,2滤波频率
+    sFilter.Acc3 = FILTER_ACC3;      // 加速度计3滤波频率
+
+    // 设置灵敏度参数 (LSB/unit)
+    sSensitivity.Rate1 = SENSITIVITY_RATE1;   // 陀螺仪1灵敏度
+    sSensitivity.Rate2 = SENSITIVITY_RATE2;   // 陀螺仪2灵敏度
+    sSensitivity.Acc1 = SENSITIVITY_ACC1;     // 加速度计1灵敏度
+    sSensitivity.Acc2 = SENSITIVITY_ACC2;     // 加速度计2灵敏度
+    sSensitivity.Acc3 = SENSITIVITY_ACC3;     // 加速度计3灵敏度
+
+    // 设置抽取参数
+    sDecimation.Rate2 = DECIMATION_RATE;   // 陀螺仪2抽取率
+    sDecimation.Acc2 = DECIMATION_ACC;     // 加速度计2抽取率
+
+    // 初始化传感器
+    int init_result = SCH1_init(sFilter, sSensitivity, sDecimation, false);
+    
+    if (init_result != SCH1_OK)
+    {
+        printf("SCH16TK10初始化失败，错误码: %d\r\n", init_result);
+        
+        // 读取状态寄存器进行诊断
+        SCH1_status status;
+        if (SCH1_getStatus(&status) == SCH1_OK)
+        {
+            printf("状态诊断 - Summary: 0x%04X, Common: 0x%04X\r\n", 
+                   status.Summary, status.Common);
+        }
+        return AHRS_STATUS_ERROR;
+    }
+    
+    printf("SCH16TK10传感器初始化成功！\r\n");
+    
+    // 测试SPI通信稳定性
+    if (SCH1_testSPIStability())
+    {
+        printf("SPI通信测试通过\r\n");
+    }
+    else
+    {
+        printf("SPI通信测试失败，但继续运行\r\n");
+    }
+    
     ahrs_system.initialized = 1;
     
     printf("AHRS互补滤波器初始化完成\r\n");

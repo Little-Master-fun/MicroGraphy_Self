@@ -29,14 +29,14 @@
 #endif
 //=================================================硬件引脚定义================================================
 // 左编码器（编码器1）引脚定义
-#define ENCODER_LEFT                    (TC_CH07_ENCODER)                   // 左编码器接口
-#define ENCODER_LEFT_A                  (TC_CH07_ENCODER_CH1_P07_6)         // 左编码器A相引脚
-#define ENCODER_LEFT_B                  (TC_CH07_ENCODER_CH2_P07_7)         // 左编码器B相引脚
+#define ENCODER_RIGHT                    (TC_CH07_ENCODER)                   // 左编码器接口
+#define ENCODER_RIGHT_A                  (TC_CH07_ENCODER_CH1_P07_6)         // 左编码器A相引脚
+#define ENCODER_RIGHT_B                  (TC_CH07_ENCODER_CH2_P07_7)         // 左编码器B相引脚
 
 // 右编码器（编码器2）引脚定义
-#define ENCODER_RIGHT                   (TC_CH20_ENCODER)                   // 右编码器接口
-#define ENCODER_RIGHT_A                 (TC_CH20_ENCODER_CH1_P08_1)         // 右编码器A相引脚
-#define ENCODER_RIGHT_B                 (TC_CH20_ENCODER_CH2_P08_2)         // 右编码器B相引脚
+#define ENCODER_LEFT                   (TC_CH20_ENCODER)                   // 右编码器接口
+#define ENCODER_LEFT_A               (TC_CH20_ENCODER_CH1_P08_1)         // 右编码器A相引脚
+#define ENCODER_LEFT_B                 (TC_CH20_ENCODER_CH2_P08_2)         // 右编码器B相引脚
 
 //=================================================配置参数定义================================================
 #define ENCODER_SAMPLE_TIME             (2)        // 采样时间间隔 (ms)

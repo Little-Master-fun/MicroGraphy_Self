@@ -56,31 +56,39 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_info_init();                  // 调试串口信息初始化
     
-    // 1. 初始化双核通信
+    // 1. 初始化双核通信（使用DCache同步方式，不禁用DCache）
     dual_core_comm_init_core1();
     
     // 2. 等待CM7_0初始化完成
     system_delay_ms(2000);
     
-    // 3. 初始化导航系统
+    // 3. 等待AHRS陀螺仪校准完成
+    printf("[CORE1] 等待AHRS陀螺仪校准完成...\n");
+    while(!dual_core_read_ahrs_ready())
+    {
+        system_delay_ms(100);  // 每100ms检查一次
+    }
+    printf("[CORE1] AHRS校准完成，开始初始化导航系统\n");
+    
+    // 4. 初始化导航系统
     nav_ahrs_init();
     
-    // 4. 生成测试路径（可选择正方形或直线）
+    // 5. 生成测试路径（可选择正方形或直线）
     // 选项1: 生成正方形路径 (1m × 1m)
     // test_nav_ahrs_generate_square_path(1.0f);
     
-    // 选项2: 生成直线路径 (2m, 0度方向)
-    test_nav_ahrs_generate_straight_path(2.0f, 0.0f);
+    // 选项2: 生成直线路径 12m, 0度方向)
+    test_nav_ahrs_generate_straight_path(1.0f, 0.0f);
     
-    // 5. 延时等待系统稳定
+    // 6. 延时等待系统稳定
     system_delay_ms(1000);
     
-    // 6. 启动导航算法定时器
+    // 7. 启动导航算法定时器
     pit_ms_init(PIT_CH10, 5);  // 导航算法 (5ms) - CM7_1使用CH10避免与CM7_0冲突
     
-    // 7. 启动导航
+    // 8. 启动导航
     nav_ahrs_reset();
-    nav_ahrs_set_speed(2.5f);  // 设置基础速度 2.5 m/s
+    nav_ahrs_set_speed(1.0f);  // 设置基础速度
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
     
     // 主循环

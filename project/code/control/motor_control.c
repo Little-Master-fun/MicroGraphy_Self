@@ -132,19 +132,19 @@ motor_pid_status_enum motor_control_update(void)
     motor_control_system.right_output = right_output;
     
     // 输出PWM到电机
-    motor_set_pwm(MOTOR_RIGHT, (int16)left_output);
-    motor_set_pwm(MOTOR_LEFT, (int16)right_output);
+    motor_set_pwm(MOTOR_LEFT, (int16)left_output);
+    motor_set_pwm(MOTOR_RIGHT, (int16)right_output);
     
     // 记录PWM值用于分析响应曲线
     if (motor_control_system.pwm_record_enabled) {
-        // 记录左电机PWM值（实际输出给右电机）
+        // 记录左电机PWM值
         if (fabs(left_output) >= MOTOR_PWM_RECORD_THRESHOLD && 
             motor_control_system.left_pwm_record_count < MOTOR_PWM_RECORD_SIZE) {
             motor_control_system.left_pwm_record[motor_control_system.left_pwm_record_count] = left_output;
             motor_control_system.left_pwm_record_count++;
         }
         
-        // 记录右电机PWM值（实际输出给左电机）
+        // 记录右电机PWM值
         if (fabs(right_output) >= MOTOR_PWM_RECORD_THRESHOLD && 
             motor_control_system.right_pwm_record_count < MOTOR_PWM_RECORD_SIZE) {
             motor_control_system.right_pwm_record[motor_control_system.right_pwm_record_count] = right_output;

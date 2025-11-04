@@ -101,13 +101,13 @@ static encoder_status_enum encoder_read_single(encoder_id_enum encoder_id)
     if (encoder_id == ENCODER_ID_LEFT)
     {
         encoder_data = &encoder_system.left;
-        raw_count = -encoder_get_count(ENCODER_LEFT);
+        raw_count = encoder_get_count(ENCODER_LEFT);
         encoder_clear_count(ENCODER_LEFT);
     }
     else if (encoder_id == ENCODER_ID_RIGHT)
     {
         encoder_data = &encoder_system.right;
-        raw_count = encoder_get_count(ENCODER_RIGHT);
+        raw_count = -encoder_get_count(ENCODER_RIGHT);
         encoder_clear_count(ENCODER_RIGHT);
     }
     else

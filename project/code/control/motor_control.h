@@ -46,7 +46,7 @@
 
 // 通用PI控制参数
 #define MOTOR_PI_INTEGRAL_MAX       (7.0f)       // 积分限幅 (m) - 防止积分饱和
-#define MOTOR_PI_OUTPUT_MAX         (9999.0f)    // 输出限幅 (PWM)
+#define MOTOR_PI_OUTPUT_MAX         (5000.0f)    // 输出限幅 (PWM)
 #define MOTOR_PI_CONTROL_PERIOD     (0.002f)     // 控制周期 (s) - 2ms
 
 // PWM数据记录配置

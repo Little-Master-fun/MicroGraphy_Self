@@ -43,15 +43,15 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     memset(&nav_ahrs, 0, sizeof(nav_ahrs_controller_t));
     
     // 初始化转弯PID参数（大误差，快速响应）
-    nav_ahrs.pid_turn.kp = 15.0f;
-    nav_ahrs.pid_turn.ki = 0.5f;
-    nav_ahrs.pid_turn.kd = 5.0f;
+    nav_ahrs.pid_turn.kp = 0.03f;
+    nav_ahrs.pid_turn.ki = 0.005f;
+    nav_ahrs.pid_turn.kd = 0.003f;
     nav_ahrs.pid_turn.integral_limit = 50.0f;
     
     // 初始化直线PID参数（小误差，稳定精确）
-    nav_ahrs.pid_straight.kp = 8.0f;
-    nav_ahrs.pid_straight.ki = 0.2f;
-    nav_ahrs.pid_straight.kd = 3.0f;
+    nav_ahrs.pid_straight.kp = 0.1f;
+    nav_ahrs.pid_straight.ki = 0.002f;
+    nav_ahrs.pid_straight.kd = 0.3f;
     nav_ahrs.pid_straight.integral_limit = 20.0f;
     
     // 初始化速度参数
@@ -82,6 +82,7 @@ nav_ahrs_status_enum nav_ahrs_init(void)
 //-------------------------------------------------------------------------------------------------------------------
 nav_ahrs_status_enum nav_ahrs_update(float dt)
 {
+    
     if (!nav_ahrs.initialized) {
         return NAV_AHRS_STATUS_NOT_INIT;
     }
@@ -98,7 +99,14 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     }
     
     // 1. 更新当前状态（里程、航向角）
-    nav_ahrs_update_state();
+    nav_ahrs_status_enum status = nav_ahrs_update_state();
+    if (status != NAV_AHRS_STATUS_OK) {
+        // 状态更新失败（例如yaw为NaN，正在校准），停止导航
+        nav_ahrs.left_speed = 0.0f;
+        nav_ahrs.right_speed = 0.0f;
+        printf("[NAV_AHRS] 状态更新失败，停止导航（可能正在校准偏置）\n");
+        return status;
+    }
     
     // 2. 查找前瞻点
     nav_ahrs_find_lookahead_point();
@@ -153,14 +161,24 @@ nav_ahrs_status_enum nav_ahrs_get_motor_output(int32 *left_pwm, int32 *right_pwm
 //-------------------------------------------------------------------------------------------------------------------
 nav_ahrs_status_enum nav_ahrs_set_mode(nav_ahrs_mode_enum mode)
 {
+    // 如果要进入回放模式，先检查yaw是否有效
+    if (mode == NAV_AHRS_MODE_REPLAY) {
+        // 同步DCache，确保读取到最新数据
+        SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
+        
+        // 检查yaw是否为NaN
+        if (isnan(shared_core0_data.yaw)) {
+            printf("[NAV_AHRS] 无法启动导航：yaw为NaN，AHRS正在校准偏置，请等待校准完成\n");
+            return NAV_AHRS_STATUS_ERROR;
+        }
+        
+        printf("[NAV_AHRS] 开始导航回放\n");
+    }
+    
     nav_ahrs.mode = mode;
     
     const char* mode_names[] = {"空闲", "回放", "暂停"};
     printf("[NAV_AHRS] 模式切换为: %s\n", mode_names[mode]);
-    
-    if (mode == NAV_AHRS_MODE_REPLAY) {
-        printf("[NAV_AHRS] 开始导航回放\n");
-    }
     
     return NAV_AHRS_STATUS_OK;
 }
@@ -242,19 +260,32 @@ nav_ahrs_status_enum nav_ahrs_set_pid(uint8 is_turn, float kp, float ki, float k
 //-------------------------------------------------------------------------------------------------------------------
 static nav_ahrs_status_enum nav_ahrs_update_state(void)
 {
-    // 1. 从共享内存读取传感器数据（CM7_0已采集）
-    // 检查数据有效性
+    // 1. 同步DCache，确保读取到RAM中的最新数据
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
+    
+    // 2. 检查数据有效性
     if (!shared_core0_data.data_valid) {
         return NAV_AHRS_STATUS_ERROR;
     }
     
-    // 2. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
+    // 3. 检查yaw是否为NaN - 如果是NaN说明正在静止记录偏置（校准中）
+    if (isnan(shared_core0_data.yaw)) {
+        // yaw为NaN，AHRS正在校准陀螺仪偏置，导航不启动
+        static uint8 nan_warning_printed = 0;
+        if (!nan_warning_printed) {
+            printf("[NAV_AHRS] yaw为NaN，AHRS正在校准偏置，等待校准完成...\n");
+            nan_warning_printed = 1;
+        }
+        return NAV_AHRS_STATUS_ERROR;
+    }
+    
+    // 4. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
     nav_ahrs.current_distance = shared_core0_data.distance;  // 单位: mm
     
-    // 3. 获取当前航向角 - 从共享内存
+    // 5. 获取当前航向角 - 从共享内存
     nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
     
-    // 5. 更新当前路径点索引
+    // 6. 更新当前路径点索引
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {
         if (nav_ahrs.path.points[i].distance > nav_ahrs.current_distance) {
             nav_ahrs.path.current_index = i;
@@ -357,7 +388,7 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
     
     // 2. 根据误差大小选择PID控制器
     nav_ahrs_pid_t *pid;
-    if (fabs(nav_ahrs.angle_error) > 2.0f) {
+    if (fabs(nav_ahrs.angle_error) > 20.0f) {
         // 大误差，使用转弯PID
         pid = &nav_ahrs.pid_turn;
     } else {

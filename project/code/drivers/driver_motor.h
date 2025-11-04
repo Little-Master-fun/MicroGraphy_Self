@@ -38,7 +38,7 @@
 
 //=================================================配置参数定义================================================
 #define MOTOR_PWM_FREQUENCY     (17000)     // PWM频率 17KHz
-#define MOTOR_PWM_MAX           (9999)      // PWM最大占空比
+#define MOTOR_PWM_MAX           (3000)      // PWM最大占空比
 #define MOTOR_PWM_MIN           (10)        // PWM最小有效占空比
 #define MOTOR_PWM_INIT_DUTY     (0)         // PWM初始占空比
 

@@ -14,6 +14,10 @@
 
 "--multicore_nr_of_cores=1" 
 
+"--multicore_master" 
+
+"--multicore_session_file=F:\AutoCar\conbin_project\MicroGraphy2.0\project\iar\project_config\cm7_0_cm7_1_debug.xml" 
+
 "--drv_tpiu_regbase=0xE008E002" 
 
 "--jet_probe=cmsisdap" 

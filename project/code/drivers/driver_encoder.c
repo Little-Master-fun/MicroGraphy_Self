@@ -119,18 +119,18 @@ static encoder_status_enum encoder_read_single(encoder_id_enum encoder_id)
     encoder_data->pulse_count = raw_count;
     encoder_data->pulse_count_abs = (raw_count < 0) ? -raw_count : raw_count;
     
-    // 噪声过滤：忽略小于阈值的脉冲计数（减少静止时的累计误差）
-    const int32 noise_threshold = 2;  // 噪声阈值，可根据实际情况调整
+    // 噪声过滤：忽略小于阈值的脉冲计数
+    const int32 noise_threshold = 2;  // 噪声阈值
     if (encoder_data->pulse_count_abs >= noise_threshold) {
         // 更新总脉冲计数（考虑方向，避免噪声累计）
         encoder_data->total_pulse += encoder_data->pulse_count;  // 使用带符号的脉冲计数
     } else {
-        // 小于阈值的脉冲被认为是噪声，不累计到总脉冲中
+        // 噪声，不累计到总脉冲中
         encoder_data->pulse_count = 0;
         encoder_data->pulse_count_abs = 0;
     }
     
-    // 判断方向（基于过滤后的脉冲）
+    // 判断方向
     if (encoder_data->pulse_count > 0)
     {
         encoder_data->direction = ENCODER_DIR_FORWARD;

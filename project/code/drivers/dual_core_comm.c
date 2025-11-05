@@ -1,8 +1,8 @@
 /*********************************************************************************************************************
 * 文件名称          dual_core_comm.c
 * 功能说明          双核通信实现（基于共享内存+DCache同步）
-* 作者              AI Assistant
-* 版本信息          v2.0
+* 作者              LittleMaster
+* 版本信息          v2.0             改成共享内存模式，提高通信效率
 * 
 * 说明：
 * 1. 使用#pragma location指定共享内存地址（0x28001000开始）
@@ -65,8 +65,7 @@ void dual_core_update_sensor_data(void)
     shared_core0_data.roll = euler.roll;
     
     // 读取陀螺仪数据（角速度）
-    // 注意：gyro_z需要从IMU原始数据中获取，这里暂时设为0，实际使用时需要完善
-    shared_core0_data.gyro_z = 0.0f;  // TODO: 从IMU获取Z轴角速度
+    //shared_core0_data.gyro_z = 0.0f;  // 没啥必要，暂时没做从IMU获取Z轴角速度
     
     // 读取编码器数据（encoder_update()已计算好距离）
     extern encoder_system_struct encoder_system;
@@ -75,8 +74,8 @@ void dual_core_update_sensor_data(void)
     
     // 读取编码器累积距离（已自动计算，单位mm）
     shared_core0_data.distance = encoder_system.total_distance;
-    shared_core0_data.position_x = 0.0f;  // TODO: 添加位置计算
-    shared_core0_data.position_y = 0.0f;
+    // shared_core0_data.position_x = 0.0f;  
+    // shared_core0_data.position_y = 0.0f;
     
     // 读取速度（m/s）
     shared_core0_data.velocity = encoder_system.linear_velocity;

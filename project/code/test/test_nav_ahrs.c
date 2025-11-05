@@ -19,7 +19,6 @@
 #include "driver_encoder.h"
 #include "motor_control.h"
 #include "zf_common_headfile.h"
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -36,17 +35,12 @@ nav_ahrs_status_enum test_nav_ahrs_generate_square_path(float size)
         return NAV_AHRS_STATUS_NOT_INIT;
     }
     
-    printf("[NAV_TEST] 生成正方形路径: %.2fm × %.2fm\n", size, size);
-    
     // 计算参数
     float perimeter = 4.0f * size;  // 周长 (m)
     float total_distance = perimeter * 1000.0f;  // 总距离 (mm)
     
     // 每条边的距离 (mm)
     float distance_per_side = total_distance / 4.0f;
-    
-    printf("[NAV_TEST] 总周长: %.2fm, 总距离: %.2fmm\n", perimeter, total_distance);
-    printf("[NAV_TEST] 每边距离: %.2fmm\n", distance_per_side);
     
     // 生成路径点
     uint16 point_idx = 0;
@@ -131,10 +125,6 @@ nav_ahrs_status_enum test_nav_ahrs_generate_square_path(float size)
     nav_ahrs.path.loop_mode = 1;  // 循环模式
     nav_ahrs.path_loaded = 1;
     
-    printf("[NAV_TEST] 路径生成完成，共 %d 个点\n", point_idx);
-    printf("[NAV_TEST] 转角位置: %d, %d, %d\n", 
-           corner_indices[0], corner_indices[1], corner_indices[2]);
-    
     return NAV_AHRS_STATUS_OK;
 }
 
@@ -150,12 +140,8 @@ nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float di
         return NAV_AHRS_STATUS_NOT_INIT;
     }
     
-    printf("[NAV_TEST] 生成直线路径: %.2fm, 方向: %.1f°\n", length, direction);
-    
     // 计算参数
     float total_distance = length * 1000.0f;  // 总距离 (mm)
-    
-    printf("[NAV_TEST] 总距离: %.2fmm\n", total_distance);
     
     // 生成路径点
     uint16 point_idx = 0;
@@ -174,8 +160,6 @@ nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float di
     nav_ahrs.path.loop_mode = 0;  // 非循环模式
     nav_ahrs.path_loaded = 1;
     
-    printf("[NAV_TEST] 路径生成完成，共 %d 个点\n", point_idx);
-    
     return NAV_AHRS_STATUS_OK;
 }
 
@@ -188,61 +172,35 @@ nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float di
  */
 uint8 test_nav_ahrs_quick_start(void)
 {
-    printf("\n╔════════════════════════════════════════════╗\n");
-    printf("║     AHRS导航系统一键启动                   ║\n");
-    printf("╚════════════════════════════════════════════╝\n\n");
-    
     // 1. 初始化AHRS姿态解算系统
-    printf("[1/6] 初始化AHRS姿态解算...\n");
     if (ahrs_complementary_init() != AHRS_STATUS_OK) {
-        printf("? 错误：AHRS初始化失败\n");
         return 0;
     }
-    printf("? AHRS初始化完成\n\n");
     
     // 2. 初始化编码器
-    printf("[2/6] 初始化编码器...\n");
     if (encoder_init() != ENCODER_STATUS_OK) {
-        printf("? 错误：编码器初始化失败\n");
         return 0;
     }
-    printf("? 编码器初始化完成\n\n");
     
     // 3. 初始化电机控制
-    printf("[3/6] 初始化电机控制...\n");
     if (motor_pid_init() != MOTOR_PID_OK) {
-        printf("? 错误：电机控制初始化失败\n");
         return 0;
     }
-    printf("? 电机控制初始化完成\n\n");
     
     // 4. 初始化AHRS导航系统
-    printf("[4/6] 初始化AHRS导航系统...\n");
     if (nav_ahrs_init() != NAV_AHRS_STATUS_OK) {
-        printf("? 错误：导航系统初始化失败\n");
         return 0;
     }
-    printf("? 导航系统初始化完成\n\n");
     
     // 5. 生成1m×1m正方形路径
-    printf("[5/6] 生成1m×1m正方形路径...\n");
     if (test_nav_ahrs_generate_square_path(1.0f) != NAV_AHRS_STATUS_OK) {
-        printf("? 错误：路径生成失败\n");
         return 0;
     }
-    printf("? 路径生成完成\n\n");
     
     // 6. 启动导航
-    printf("[6/6] 启动导航回放模式...\n");
     nav_ahrs_reset();                      // 重置状态
     nav_ahrs_set_speed(2.5f);              // 设置基础速度 2.5 m/s
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);  // 启动回放模式
-    printf("? 导航已启动\n\n");
-    
-    printf("╔════════════════════════════════════════════╗\n");
-    printf("║     初始化完成！小车开始导航               ║\n");
-    printf("║     请在定时器中调用 test_nav_ahrs_loop() ║\n");
-    printf("╚════════════════════════════════════════════╝\n\n");
     
     return 1;
 }
@@ -256,61 +214,35 @@ uint8 test_nav_ahrs_quick_start(void)
  */
 uint8 test_nav_ahrs_quick_start_straight(float length, float direction)
 {
-    printf("\n╔════════════════════════════════════════════╗\n");
-    printf("║     AHRS导航系统一键启动（直线）           ║\n");
-    printf("╚════════════════════════════════════════════╝\n\n");
-    
     // 1. 初始化AHRS姿态解算系统
-    printf("[1/6] 初始化AHRS姿态解算...\n");
     if (ahrs_complementary_init() != AHRS_STATUS_OK) {
-        printf("? 错误：AHRS初始化失败\n");
         return 0;
     }
-    printf("? AHRS初始化完成\n\n");
     
     // 2. 初始化编码器
-    printf("[2/6] 初始化编码器...\n");
     if (encoder_init() != ENCODER_STATUS_OK) {
-        printf("? 错误：编码器初始化失败\n");
         return 0;
     }
-    printf("? 编码器初始化完成\n\n");
     
     // 3. 初始化电机控制
-    printf("[3/6] 初始化电机控制...\n");
     if (motor_pid_init() != MOTOR_PID_OK) {
-        printf("? 错误：电机控制初始化失败\n");
         return 0;
     }
-    printf("? 电机控制初始化完成\n\n");
     
     // 4. 初始化AHRS导航系统
-    printf("[4/6] 初始化AHRS导航系统...\n");
     if (nav_ahrs_init() != NAV_AHRS_STATUS_OK) {
-        printf("? 错误：导航系统初始化失败\n");
         return 0;
     }
-    printf("? 导航系统初始化完成\n\n");
     
     // 5. 生成直线路径
-    printf("[5/6] 生成%.2fm直线路径（方向%.1f°）...\n", length, direction);
     if (test_nav_ahrs_generate_straight_path(length, direction) != NAV_AHRS_STATUS_OK) {
-        printf("? 错误：路径生成失败\n");
         return 0;
     }
-    printf("? 路径生成完成\n\n");
     
     // 6. 启动导航
-    printf("[6/6] 启动导航回放模式...\n");
     nav_ahrs_reset();                      // 重置状态
     nav_ahrs_set_speed(2.5f);              // 设置基础速度 2.5 m/s
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);  // 启动回放模式
-    printf("? 导航已启动\n\n");
-    
-    printf("╔════════════════════════════════════════════╗\n");
-    printf("║     初始化完成！小车开始导航               ║\n");
-    printf("║     请在定时器中调用 test_nav_ahrs_loop() ║\n");
-    printf("╚════════════════════════════════════════════╝\n\n");
     
     return 1;
 }

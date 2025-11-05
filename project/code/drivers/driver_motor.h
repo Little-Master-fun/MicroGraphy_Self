@@ -24,21 +24,23 @@
 #include "zf_common_typedef.h"
 
 //=================================================硬件引脚定义================================================
-// 左电机PWM通道定义（双PWM控制）
-#define MOTOR_LEFT_PWM1         (TCPWM_CH00_P03_1)  // 左电机正转PWM通道
-#define MOTOR_LEFT_PWM2         (TCPWM_CH01_P03_0)  // 左电机反转PWM通道
+// 左电机PWM通道定义
+#define MOTOR_LEFT_PWM1         (TCPWM_CH08_P05_3)  // 左电机正转PWM通道
+#define MOTOR_LEFT_PWM2         (TCPWM_CH07_P05_2)  // 左电机反转PWM通道
+#define MOTOR_LEFT_PWM3         (TCPWM_CH06_P05_1)  // 左电机备用PWM通道
 
-// 右电机PWM通道定义（双PWM控制）
-#define MOTOR_RIGHT_PWM1        (TCPWM_CH04_P02_3)  // 右电机正转PWM通道
-#define MOTOR_RIGHT_PWM2        (TCPWM_CH03_P02_4)  // 右电机反转PWM通道
+// 右电机PWM通道定义
+#define MOTOR_RIGHT_PWM1        (TCPWM_CH09_P05_4)  // 右电机正转PWM通道
+#define MOTOR_RIGHT_PWM2        (TCPWM_CH05_P05_0)  // 右电机反转PWM通道
+#define MOTOR_RIGHT_PWM3        (TCPWM_CH17_P06_3)  // 右电机备用PWM通道
 
-// 开关输入引脚（可选）
+// 开关输入引脚
 #define SWITCH1                 (P21_5)
 #define SWITCH2                 (P21_6)
 
 //=================================================配置参数定义================================================
 #define MOTOR_PWM_FREQUENCY     (17000)     // PWM频率 17KHz
-#define MOTOR_PWM_MAX           (3000)      // PWM最大占空比
+#define MOTOR_PWM_MAX           (3000)      // PWM最大占空比(先小一些测试)
 #define MOTOR_PWM_MIN           (10)        // PWM最小有效占空比
 #define MOTOR_PWM_INIT_DUTY     (0)         // PWM初始占空比
 

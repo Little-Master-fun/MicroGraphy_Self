@@ -23,12 +23,12 @@
 #include "zf_driver_gpio.h"
 #include "zf_driver_spi.h"
 
-#define ICM42688_SPI          (SPI_2)                                                           //SPI???????
-#define ICM42688_MOSI_Pin     (SPI2_MOSI_P15_1)                                                //MOSI???????
-#define ICM42688_MISO_Pin     (SPI2_MISO_P15_0)                                                //MISO???????
-#define ICM42688_CS_Pin       (SPI2_CS0_P15_3)                                                 //CS?????????
-#define ICM42688_SCK_Pin      (SPI2_CLK_P15_2 )                                                //SCLKï¿½ï¿½ï¿½Å¶ï¿½ï¿½ï¿½
-#define ICM42688_SPEED        (10 * 1000 * 1000)                                                //SPIÊ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë´ï¿½Îª10M
+#define ICM42688_SPI          (SPI_2)                                                           //SPIÍ¨µÀ
+#define ICM42688_MOSI_Pin     (SPI2_MOSI_P07_2)                                                //MOSIÒý½Å P7.2 (Òý½Å42)
+#define ICM42688_MISO_Pin     (SPI2_MISO_P07_0)                                                //MISOÒý½Å P7.0 (Òý½Å41)
+#define ICM42688_CS_Pin       (SPI2_CS0_P07_4)                                                 //CSÒý½Å P7.4 (Òý½Å44)
+#define ICM42688_SCK_Pin      (SPI2_CLK_P07_3)                                                 //SCLKÒý½Å P7.3 (Òý½Å43)
+#define ICM42688_SPEED        (10 * 1000 * 1000)                                                //SPIÊ±ÖÓÆµÂÊ Éè¶¨Îª10M
 
 
 

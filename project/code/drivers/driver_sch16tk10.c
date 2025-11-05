@@ -22,14 +22,14 @@
 #include "driver_sch16tk10.h"
 #include "zf_common_headfile.h"
 
-// 硬件引脚定义 / Hardware pin definitions
-#define EXTRESN_PORT    P14_1               // 复位引脚 / Reset pin
-#define SPI_CS_PIN      P15_3               // GPIO方式的片选引脚 / CS pin as GPIO
-#define SPI2_CS_PIN     SPI2_CS0_P15_3      // SPI外设的片选引脚 / CS pin for SPI peripheral
-#define SPI2_SCK_PIN    SPI2_CLK_P15_2      // SPI时钟引脚 / SPI clock pin
-#define SPI2_MISO_PIN   SPI2_MISO_P15_0     // SPI主设备输入引脚 / SPI master input pin
-#define SPI2_MOSI_PIN   SPI2_MOSI_P15_1     // SPI主设备输出引脚 / SPI master output pin
-#define GPIO_RESET      (P05_1)             // 备用复位引脚 / Alternative reset pin
+// 硬件引脚定义 / Hardware pin definitions (根据原理图 U42)
+#define EXTRESN_PORT    P07_5               // 复位引脚 / Reset pin (引脚45)
+#define SPI_CS_PIN      P07_4               // GPIO方式的片选引脚 / CS pin as GPIO (引脚44)
+#define SPI2_CS_PIN     SPI2_CS0_P07_4      // SPI外设的片选引脚 / CS pin for SPI peripheral
+#define SPI2_SCK_PIN    SPI2_CLK_P07_3      // SPI时钟引脚 / SPI clock pin (引脚43)
+#define SPI2_MISO_PIN   SPI2_MISO_P07_0     // SPI主设备输入引脚 / SPI master input pin (引脚41)
+#define SPI2_MOSI_PIN   SPI2_MOSI_P07_2     // SPI主设备输出引脚 / SPI master output pin (引脚42)
+#define GPIO_RESET      (P07_5)             // 备用复位引脚 / Alternative reset pin
 
 // 静态变量定义 / Static variable definitions
 static pit_index_enum sampling_timer = PIT_CH0;  // 采样定时器通道 / Sampling timer channel

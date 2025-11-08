@@ -244,17 +244,17 @@ static void motor_set_direction_pins(motor_id_enum motor_id, uint8 direction)
 {
     uint8 in1_level, in2_level;
     
-    // 根据方向确定IN1/IN2电平
+    // 根据方向确定IN1/IN2电平（已反转方向以匹配编码器）
     switch (direction)
     {
-        case MOTOR_DIR_CW:      // 正转: IN1=1, IN2=0
-            in1_level = 1;
-            in2_level = 0;
-            break;
-            
-        case MOTOR_DIR_CCW:     // 反转: IN1=0, IN2=1
+        case MOTOR_DIR_CW:      // 正转（已反转）: IN1=0, IN2=1
             in1_level = 0;
             in2_level = 1;
+            break;
+            
+        case MOTOR_DIR_CCW:     // 反转（已反转）: IN1=1, IN2=0
+            in1_level = 1;
+            in2_level = 0;
             break;
             
         case MOTOR_DIR_BRAKE:   // 刹车: IN1=0, IN2=0

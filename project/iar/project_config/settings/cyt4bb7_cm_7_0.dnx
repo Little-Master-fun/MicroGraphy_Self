@@ -14,7 +14,7 @@
         <MemConfigValue>D:\IAR\arm\config\debugger\Infineon\CYT4BB_M7.ddf</MemConfigValue>
     </PlDriver>
     <DebugChecksum>
-        <Checksum>1506717362</Checksum>
+        <Checksum>2716827244</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>

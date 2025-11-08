@@ -78,7 +78,7 @@ int main(void)
     // test_nav_ahrs_generate_square_path(1.0f);
     
     // 选项2: 生成直线路径 12m, 0度方向)
-    test_nav_ahrs_generate_straight_path(1.0f, 0.0f);
+    test_nav_ahrs_generate_straight_path(10.0f, 0.0f);
     
     // 6. 延时等待系统稳定
     system_delay_ms(1000);

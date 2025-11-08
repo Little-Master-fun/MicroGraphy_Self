@@ -29,24 +29,24 @@
 #include "zf_common_typedef.h"
 
 //=================================================配置参数定义================================================
-// 前馈控制参数 - 基于两点直线拟合 (2000,1.1), (3000,1.7)
+// 前馈控制参数 - 基于两点直线拟合 (2000,1.1), (3000,1.7)()
 #define MOTOR_FEEDFORWARD_KFF       (1666.7f)   // 前馈系数 Kff = 1/b
 #define MOTOR_FEEDFORWARD_A         (-0.1f)     // 截距 a = v - b*PWM
 #define MOTOR_FEEDFORWARD_B         (0.0006f)   // 斜率 b = (1.7-1.1)/(3000-2000)
 
-// 左电机PI控制参数(20ms响应级)
-#define MOTOR_LEFT_PI_KP_DEFAULT    (2500.0f)    // 左电机比例系数
-#define MOTOR_LEFT_PI_KI_DEFAULT    (525.0f)     // 左电机积分系数
+// 左电机PI控制参数
+#define MOTOR_LEFT_PI_KP_DEFAULT    (1500.0f)    // 左电机比例系数
+#define MOTOR_LEFT_PI_KI_DEFAULT    (625.0f)     // 左电机积分系数
 #define MOTOR_LEFT_PI_KD_DEFAULT    (0.0f)       // 左电机微分系数
 
 // 右电机PI控制参数  
-#define MOTOR_RIGHT_PI_KP_DEFAULT   (2500.0f)    // 右电机比例系数
-#define MOTOR_RIGHT_PI_KI_DEFAULT   (525.0f)     // 右电机积分系数
+#define MOTOR_RIGHT_PI_KP_DEFAULT   (1500.0f)    // 右电机比例系数
+#define MOTOR_RIGHT_PI_KI_DEFAULT   (625.0f)     // 右电机积分系数
 #define MOTOR_RIGHT_PI_KD_DEFAULT   (0.0f)       // 右电机微分系数
 
 // 通用PI控制参数
 #define MOTOR_PI_INTEGRAL_MAX       (7.0f)       // 积分限幅 (m) - 防止积分饱和
-#define MOTOR_PI_OUTPUT_MAX         (5000.0f)    // 输出限幅 (PWM)
+#define MOTOR_PI_OUTPUT_MAX         (9000.0f)    // 输出限幅 (PWM)
 #define MOTOR_PI_CONTROL_PERIOD     (0.002f)     // 控制周期 (s) - 2ms
 
 // PWM数据记录配置

@@ -28,7 +28,7 @@
 #include <math.h>
 
 //=================================================常量定义================================================
-#define DELTA_T              0.0004f         // 更新周期 1ms (需与AVG_FACTOR配合)
+#define DELTA_T              0.0005631f         // 更新周期 1ms (需与AVG_FACTOR配合)
 // #define DELTA_T              0.000563f        // 更新周期 1ms (需与AVG_FACTOR配合)
 #define ALPHA                1.0f           // 加速度计低通滤波系数
 #define G_TO_M_S2            9.80665f       // 重力加速度转换系数
@@ -36,7 +36,7 @@
 // // #define DEG_TO_RAD           0.017453292519943295f  // 度转弧度 (π/180)，传感器输出是dps需要转换#define GNSS_PI              3.1415926535f  // 圆周率
 
 // 陀螺仪零偏校准参数（注意：由于AVG_FACTOR=2，实际时间为采样点数×2ms）
-#define GYRO_CALIB_START     400            // 开始校准的采样点 (800ms后开始)
+#define GYRO_CALIB_START     400            // 开始校准的采样点 (800ms后开始) 400
 #define GYRO_CALIB_END       1400           // 结束校准的采样点 (2800ms)
 #define GYRO_CALIB_SAMPLES   1000           // 校准采样点数 (累加1000次，持续2秒)
 #define GYRO_CALIB_FINISH    1500           // 校准完成点 (3000ms)

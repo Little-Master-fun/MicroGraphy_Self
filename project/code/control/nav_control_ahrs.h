@@ -34,13 +34,19 @@
 #define NAV_AHRS_WHEELBASE          0.134f      // 轮距 (m)
 #define NAV_AHRS_WHEEL_DIAMETER     0.065f      // 轮径 (m)
 
+// 启动延时配置（假设更新周期为10ms）
+#define NAV_AHRS_STABLE_WAIT_TIME_MS   2000     // 陀螺仪校准后的稳定等待时间 (ms)
+#define NAV_AHRS_UPDATE_PERIOD_MS      10       // 导航系统更新周期 (ms)
+
 //=================================================枚举定义================================================
 // 导航状态枚举
 typedef enum {
     NAV_AHRS_STATUS_OK = 0,
     NAV_AHRS_STATUS_ERROR,
     NAV_AHRS_STATUS_NOT_INIT,
-    NAV_AHRS_STATUS_PATH_END
+    NAV_AHRS_STATUS_PATH_END,
+    NAV_AHRS_STATUS_WAITING_CALIB,      // 等待陀螺仪校准
+    NAV_AHRS_STATUS_WAITING_STABLE      // 等待系统稳定
 } nav_ahrs_status_enum;
 
 // 导航模式枚举
@@ -111,6 +117,12 @@ typedef struct {
     nav_ahrs_status_enum status;
     uint8 initialized;
     uint8 path_loaded;
+    
+    // 启动延时控制
+    uint8 ahrs_calibration_done;        // AHRS校准完成标志
+    uint32 stable_wait_counter;         // 稳定等待计数器
+    uint32 stable_wait_required;        // 需要的稳定等待次数
+    uint8 ready_to_start;               // 准备好启动标志
     
 } nav_ahrs_controller_t;
 

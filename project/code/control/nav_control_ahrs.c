@@ -43,13 +43,13 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     memset(&nav_ahrs, 0, sizeof(nav_ahrs_controller_t));
     
     // 初始化转弯PID参数（大误差，快速响应）
-    nav_ahrs.pid_turn.kp = 0.03f;
-    nav_ahrs.pid_turn.ki = 0.005f;
-    nav_ahrs.pid_turn.kd = 0.003f;
+    nav_ahrs.pid_turn.kp = 0.3f;
+    nav_ahrs.pid_turn.ki = 0.05f;
+    nav_ahrs.pid_turn.kd = 0.03f;
     nav_ahrs.pid_turn.integral_limit = 50.0f;
     
     // 初始化直线PID参数（小误差，稳定精确）
-    nav_ahrs.pid_straight.kp = 0.1f;
+    nav_ahrs.pid_straight.kp = 0.5f;
     nav_ahrs.pid_straight.ki = 0.002f;
     nav_ahrs.pid_straight.kd = 0.3f;
     nav_ahrs.pid_straight.integral_limit = 20.0f;
@@ -65,6 +65,12 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     nav_ahrs.status = NAV_AHRS_STATUS_OK;
     nav_ahrs.initialized = 1;
     nav_ahrs.path_loaded = 0;
+    
+    // 启动延时控制初始化
+    nav_ahrs.ahrs_calibration_done = 0;
+    nav_ahrs.stable_wait_counter = 0;
+    nav_ahrs.stable_wait_required = NAV_AHRS_STABLE_WAIT_TIME_MS / NAV_AHRS_UPDATE_PERIOD_MS;  // 计算需要的等待次数
+    nav_ahrs.ready_to_start = 0;
     
     printf("[NAV_AHRS] 导航系统初始化完成\n");
     printf("[NAV_AHRS] 转弯PID: Kp=%.1f, Ki=%.1f, Kd=%.1f\n", 
@@ -91,6 +97,55 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return NAV_AHRS_STATUS_ERROR;
     }
     
+    // 1. 检查AHRS校准状态（从共享内存读取）
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
+    
+    // 1.1 如果AHRS尚未校准完成，等待
+    if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
+        nav_ahrs.left_speed = 0.0f;
+        nav_ahrs.right_speed = 0.0f;
+        nav_ahrs.ahrs_calibration_done = 0;
+        nav_ahrs.stable_wait_counter = 0;
+        nav_ahrs.ready_to_start = 0;
+        
+        static uint8 calib_msg_printed = 0;
+        if (!calib_msg_printed) {
+            printf("[NAV_AHRS] 等待陀螺仪校准完成...\r\n");
+            calib_msg_printed = 1;
+        }
+        return NAV_AHRS_STATUS_WAITING_CALIB;
+    }
+    
+    // 1.2 AHRS校准完成，开始稳定等待计数
+    if (!nav_ahrs.ahrs_calibration_done) {
+        nav_ahrs.ahrs_calibration_done = 1;
+        nav_ahrs.stable_wait_counter = 0;
+        printf("[NAV_AHRS] 陀螺仪校准完成，开始稳定等待 %d ms...\r\n", NAV_AHRS_STABLE_WAIT_TIME_MS);
+    }
+    
+    // 1.3 如果还在稳定等待期，继续等待
+    if (!nav_ahrs.ready_to_start) {
+        nav_ahrs.stable_wait_counter++;
+        
+        if (nav_ahrs.stable_wait_counter >= nav_ahrs.stable_wait_required) {
+            nav_ahrs.ready_to_start = 1;
+            printf("[NAV_AHRS] 系统稳定完成，准备就绪！可以启动导航\r\n");
+        } else {
+            // 还在等待期，停车
+            nav_ahrs.left_speed = 0.0f;
+            nav_ahrs.right_speed = 0.0f;
+            
+            // 每秒打印一次进度
+            if (nav_ahrs.stable_wait_counter % (1000 / NAV_AHRS_UPDATE_PERIOD_MS) == 0) {
+                printf("[NAV_AHRS] 稳定等待中... %d/%d ms\r\n", 
+                       nav_ahrs.stable_wait_counter * NAV_AHRS_UPDATE_PERIOD_MS, 
+                       NAV_AHRS_STABLE_WAIT_TIME_MS);
+            }
+            return NAV_AHRS_STATUS_WAITING_STABLE;
+        }
+    }
+    
+    // 2. 系统已准备就绪，检查运行模式
     if (nav_ahrs.mode != NAV_AHRS_MODE_REPLAY) {
         // 非回放模式，停车
         nav_ahrs.left_speed = 0.0f;
@@ -161,24 +216,38 @@ nav_ahrs_status_enum nav_ahrs_get_motor_output(int32 *left_pwm, int32 *right_pwm
 //-------------------------------------------------------------------------------------------------------------------
 nav_ahrs_status_enum nav_ahrs_set_mode(nav_ahrs_mode_enum mode)
 {
-    // 如果要进入回放模式，先检查yaw是否有效
+    // 如果要进入回放模式，先进行一系列检查
     if (mode == NAV_AHRS_MODE_REPLAY) {
         // 同步DCache，确保读取到最新数据
         SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
         
-        // 检查yaw是否为NaN
+        // 1. 检查AHRS是否校准完成
+        if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
+            printf("[NAV_AHRS] 无法启动导航：陀螺仪正在校准，请等待校准完成\r\n");
+            return NAV_AHRS_STATUS_WAITING_CALIB;
+        }
+        
+        // 2. 检查是否完成稳定等待
+        if (!nav_ahrs.ready_to_start) {
+            printf("[NAV_AHRS] 无法启动导航：系统正在稳定等待中 (%d/%d ms)\r\n", 
+                   nav_ahrs.stable_wait_counter * NAV_AHRS_UPDATE_PERIOD_MS,
+                   NAV_AHRS_STABLE_WAIT_TIME_MS);
+            return NAV_AHRS_STATUS_WAITING_STABLE;
+        }
+        
+        // 3. 检查yaw是否为NaN
         if (isnan(shared_core0_data.yaw)) {
-            printf("[NAV_AHRS] 无法启动导航：yaw为NaN，AHRS正在校准偏置，请等待校准完成\n");
+            printf("[NAV_AHRS] 无法启动导航：yaw为NaN，AHRS状态异常\r\n");
             return NAV_AHRS_STATUS_ERROR;
         }
         
-        printf("[NAV_AHRS] 开始导航回放\n");
+        printf("[NAV_AHRS] ? 所有检查通过，开始导航回放\r\n");
     }
     
     nav_ahrs.mode = mode;
     
     const char* mode_names[] = {"空闲", "回放", "暂停"};
-    printf("[NAV_AHRS] 模式切换为: %s\n", mode_names[mode]);
+    printf("[NAV_AHRS] 模式切换为: %s\r\n", mode_names[mode]);
     
     return NAV_AHRS_STATUS_OK;
 }
@@ -212,10 +281,15 @@ nav_ahrs_status_enum nav_ahrs_reset(void)
     nav_ahrs.left_speed = 0.0f;
     nav_ahrs.right_speed = 0.0f;
     
+    // 重置启动延时状态（如果需要重新校准）
+    nav_ahrs.ahrs_calibration_done = 0;
+    nav_ahrs.stable_wait_counter = 0;
+    nav_ahrs.ready_to_start = 0;
+    
     // 双核架构：编码器重置和电机停止由CM7_0负责
     // CM7_0会通过共享内存接收到速度为0的指令并停止电机
     
-    printf("[NAV_AHRS] 导航系统已重置\n");
+    printf("[NAV_AHRS] 导航系统已重置\r\n");
     return NAV_AHRS_STATUS_OK;
 }
 

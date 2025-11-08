@@ -17,9 +17,9 @@
 * - 通道A: INA1/INA2控制方向，PWMA控制速度
 * - 通道B: INB1/INB2控制方向，PWMB控制速度
 * 
-* 方向控制真值表：
-* - IN1=1, IN2=0: 正转 (CW)
-* - IN1=0, IN2=1: 反转 (CCW)
+* 方向控制真值表（已反转以匹配编码器方向）：
+* - IN1=0, IN2=1: 正转 (CW) - 已反转
+* - IN1=1, IN2=0: 反转 (CCW) - 已反转
 * - IN1=0, IN2=0: 短路刹车
 * - IN1=1, IN2=1: 停止（高阻态）
 ********************************************************************************************************************/
@@ -31,14 +31,14 @@
 
 //=================================================硬件引脚定义================================================
 // 左电机驱动引脚定义（使用通道A）- INA1/INA2已交换以反转方向
-#define MOTOR_LEFT_PWMA         (TCPWM_CH13_P05_4)  // 左电机PWM通道A P5.4 (引脚38)
-#define MOTOR_LEFT_INA1         (P05_0)             // 左电机方向控制1 P5.0 (引脚42) - 已交换
-#define MOTOR_LEFT_INA2         (P06_3)             // 左电机方向控制2 P6.3 - 已交换
+#define MOTOR_RIGHT_PWMA         (TCPWM_CH13_P05_4)  // 左电机PWM通道A P5.4 (引脚38)
+#define MOTOR_RIGHT_INA1         (P05_0)             // 左电机方向控制1 P5.0 (引脚42) 
+#define MOTOR_RIGHT_INA2         (P06_3)             // 左电机方向控制2 P6.3 
 
 // 右电机驱动引脚定义（使用通道A）- INA1/INA2已交换以反转方向
-#define MOTOR_RIGHT_PWMA        (TCPWM_CH12_P05_3)  // 右电机PWM通道A P5.3 (引脚39)
-#define MOTOR_RIGHT_INA1        (P05_2)             // 右电机方向控制1 P5.2 (引脚40) - 已交换
-#define MOTOR_RIGHT_INA2        (P05_1)             // 右电机方向控制2 P5.1 (引脚41) - 已交换
+#define MOTOR_LEFT_PWMA        (TCPWM_CH12_P05_3)  // 右电机PWM通道A P5.3 (引脚39)
+#define MOTOR_LEFT_INA1        (P05_2)             // 右电机方向控制1 P5.2 (引脚40) 
+#define MOTOR_LEFT_INA2        (P05_1)             // 右电机方向控制2 P5.1 (引脚41) 
 
 // 开关输入引脚
 #define SWITCH1                 (P21_5)
@@ -50,9 +50,9 @@
 #define MOTOR_PWM_MIN           (10)        // PWM最小有效占空比
 #define MOTOR_PWM_INIT_DUTY     (0)         // PWM初始占空比
 
-// TB67H420FTG方向控制定义
-#define MOTOR_DIR_CW            0           // 顺时针（正转）: IN1=1, IN2=0
-#define MOTOR_DIR_CCW           1           // 逆时针（反转）: IN1=0, IN2=1
+// TB67H420FTG方向控制定义（已反转以匹配编码器）
+#define MOTOR_DIR_CW            0           // 顺时针（正转）: IN1=0, IN2=1 (已反转)
+#define MOTOR_DIR_CCW           1           // 逆时针（反转）: IN1=1, IN2=0 (已反转)
 #define MOTOR_DIR_BRAKE         2           // 短路刹车: IN1=0, IN2=0
 #define MOTOR_DIR_STOP          3           // 停止（高阻）: IN1=1, IN2=1
 

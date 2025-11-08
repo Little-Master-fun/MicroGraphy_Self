@@ -22,13 +22,14 @@
 #include "zf_driver_delay.h"
 #include "zf_driver_gpio.h"
 #include "zf_driver_spi.h"
+#include "zf_driver_soft_spi.h"
 
-#define ICM42688_SPI          (SPI_2)                                                           //SPI通道
-#define ICM42688_MOSI_Pin     (SPI2_MOSI_P07_2)                                                //MOSI引脚 P7.2 (引脚42)
-#define ICM42688_MISO_Pin     (SPI2_MISO_P07_0)                                                //MISO引脚 P7.0 (引脚41)
-#define ICM42688_CS_Pin       (SPI2_CS0_P07_4)                                                 //CS引脚 P7.4 (引脚44)
-#define ICM42688_SCK_Pin      (SPI2_CLK_P07_3)                                                 //SCLK引脚 P7.3 (引脚43)
-#define ICM42688_SPEED        (10 * 1000 * 1000)                                                //SPI时钟频率 设定为10M
+// 注意：P07.x引脚无法使用硬件SPI，改用软件SPI (根据原理图U42)
+#define SCH16_MISO_Pin        (P07_0)                                                           //MISO引脚 P7.0 (引脚40)
+#define SCH16_MOSI_Pin        (P07_1)                                                           //MOSI引脚 P7.1 (引脚41)
+#define SCH16_SCK_Pin         (P07_2)                                                           //SCK引脚 P7.2 (引脚42)
+#define SCH16_CS_Pin          (P07_3)                                                           //CS引脚 P7.3 (引脚43)
+#define SCH16_EXTRESN_Pin     (P07_4)                                                           //复位引脚 P7.4 (引脚44)
 
 
 

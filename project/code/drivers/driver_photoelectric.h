@@ -10,26 +10,26 @@
 * 文件作用说明：
 * 本文件是18路光电管阵列的驱动程序头文件
 * 
-* 硬件接线（根据原理图）：
+* 硬件接线（根据光电管接口原理图）：
 *     通道     MCU引脚      功能
-*     CH0      P18.0        光电管0
-*     CH1      P19.0        光电管1
-*     CH2      P19.1        光电管2
-*     CH3      P19.2        光电管3
-*     CH4      P19.3        光电管4
-*     CH5      P19.4        光电管5
-*     CH6      P19.5        光电管6
-*     CH7      P19.6        光电管7
-*     CH8      P20.7        光电管8
-*     CH9      P21.0        光电管9
-*     CH10     P21.1        光电管10
-*     CH11     P21.2        光电管11
-*     CH12     P21.3        光电管12
-*     CH13     P21.4        光电管13
-*     CH14     P21.5        光电管14
-*     CH15     P21.6        光电管15
-*     CH16     P21.7        光电管16
-*     CH17     P22.0        光电管17
+*     CH0      P13.0        光电管0
+*     CH1      P13.1        光电管1
+*     CH2      P13.2        光电管2
+*     CH3      P13.3        光电管3
+*     CH4      P13.4        光电管4
+*     CH5      P13.5        光电管5
+*     CH6      P13.6        光电管6
+*     CH7      P13.7        光电管7
+*     CH8      P14.0        光电管8
+*     CH9      P14.1        光电管9
+*     CH10     P14.2        光电管10
+*     CH11     P14.3        光电管11
+*     CH12     P14.4        光电管12
+*     CH13     P14.5        光电管13
+*     CH14     P15.0        光电管14
+*     CH15     P15.1        光电管15
+*     CH16     P15.2        光电管16
+*     CH17     P15.3        光电管17
 ********************************************************************************************************************/
 
 #ifndef _DRIVER_PHOTOELECTRIC_H_
@@ -38,24 +38,25 @@
 #include "zf_common_typedef.h"
 
 //=================================================硬件引脚定义================================================
-#define PHOTO_CH0_PIN           (P18_0)                 // 光电管通道0
-#define PHOTO_CH1_PIN           (P19_0)                 // 光电管通道1
-#define PHOTO_CH2_PIN           (P19_1)                 // 光电管通道2
-#define PHOTO_CH3_PIN           (P19_2)                 // 光电管通道3
-#define PHOTO_CH4_PIN           (P19_3)                 // 光电管通道4
-#define PHOTO_CH5_PIN           (P19_4)                 // 光电管通道5
-#define PHOTO_CH6_PIN           (P19_5)                 // 光电管通道6
-#define PHOTO_CH7_PIN           (P19_6)                 // 光电管通道7
-#define PHOTO_CH8_PIN           (P20_7)                 // 光电管通道8
-#define PHOTO_CH9_PIN           (P21_0)                 // 光电管通道9
-#define PHOTO_CH10_PIN          (P21_1)                 // 光电管通道10
-#define PHOTO_CH11_PIN          (P21_2)                 // 光电管通道11
-#define PHOTO_CH12_PIN          (P21_3)                 // 光电管通道12
-#define PHOTO_CH13_PIN          (P21_4)                 // 光电管通道13
-#define PHOTO_CH14_PIN          (P21_5)                 // 光电管通道14
-#define PHOTO_CH15_PIN          (P21_6)                 // 光电管通道15
-#define PHOTO_CH16_PIN          (P21_7)                 // 光电管通道16
-#define PHOTO_CH17_PIN          (P22_0)                 // 光电管通道17
+// 根据光电管接口原理图（18路，通道0-17）
+#define PHOTO_CH0_PIN           (P13_0)                 // 光电管通道0
+#define PHOTO_CH1_PIN           (P13_1)                 // 光电管通道1
+#define PHOTO_CH2_PIN           (P13_2)                 // 光电管通道2
+#define PHOTO_CH3_PIN           (P13_3)                 // 光电管通道3
+#define PHOTO_CH4_PIN           (P13_4)                 // 光电管通道4
+#define PHOTO_CH5_PIN           (P13_5)                 // 光电管通道5
+#define PHOTO_CH6_PIN           (P13_6)                 // 光电管通道6
+#define PHOTO_CH7_PIN           (P13_7)                 // 光电管通道7
+#define PHOTO_CH8_PIN           (P14_0)                 // 光电管通道8
+#define PHOTO_CH9_PIN           (P14_1)                 // 光电管通道9
+#define PHOTO_CH10_PIN          (P14_2)                 // 光电管通道10
+#define PHOTO_CH11_PIN          (P14_3)                 // 光电管通道11
+#define PHOTO_CH12_PIN          (P14_4)                 // 光电管通道12
+#define PHOTO_CH13_PIN          (P14_5)                 // 光电管通道13
+#define PHOTO_CH14_PIN          (P15_0)                 // 光电管通道14
+#define PHOTO_CH15_PIN          (P15_1)                 // 光电管通道15
+#define PHOTO_CH16_PIN          (P15_2)                 // 光电管通道16
+#define PHOTO_CH17_PIN          (P15_3)                 // 光电管通道17
 
 //=================================================配置参数================================================
 #define PHOTO_CHANNEL_NUM       (18)                    // 光电管通道数量

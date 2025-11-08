@@ -28,19 +28,21 @@
 #include "zf_common_typedef.h"
 
 //=================================================屏幕基本配置================================================
-#define SCREEN_USE_SOFT_SPI             (0)                                     // 默认使用硬件 SPI 方式驱动
+// 注意：原理图SCK为P12.4，但硬件SPI1的CLK只能是P12.2，因此使用软件SPI
+#define SCREEN_USE_SOFT_SPI             (1)                                     // 使用软件 SPI 方式驱动
 
 #if SCREEN_USE_SOFT_SPI
 //====================================================软件 SPI 驱动==================================================
 #define SCREEN_SOFT_SPI_DELAY           (0)                                     // 软件 SPI 的时钟延时周期
-#define SCREEN_SCK_PIN                  (P12_4)                                 // 软件 SPI SCK 引脚
-#define SCREEN_MOSI_PIN                 (P12_1)                                 // 软件 SPI MOSI 引脚
+#define SCREEN_SCK_PIN                  (P12_4)                                 // 软件 SPI SCK 引脚 (原理图引脚3)
+#define SCREEN_MOSI_PIN                 (P12_1)                                 // 软件 SPI MOSI 引脚 (原理图引脚2)
 //====================================================软件 SPI 驱动==================================================
 #else
 //====================================================硬件 SPI 驱动==================================================
+// 警告：硬件SPI1的CLK只能是P12.2，无法使用原理图的P12.4！
 #define SCREEN_SPI_SPEED                (30*1000*1000)                          // 硬件 SPI 速率 30MHz
 #define SCREEN_SPI                      (SPI_1)                                 // 硬件 SPI 号
-#define SCREEN_SCK_PIN                  (SPI1_CLK_P12_4)                        // 硬件 SPI SCK 引脚 P12.4
+#define SCREEN_SCK_PIN                  (SPI1_CLK_P12_2)                        // 硬件 SPI SCK 引脚 P12.2 (非原理图)
 #define SCREEN_MOSI_PIN                 (SPI1_MOSI_P12_1)                       // 硬件 SPI MOSI 引脚 P12.1
 #define SCREEN_MISO_PIN                 (SPI_MISO_NULL)                         // 屏幕没有MISO引脚
 //====================================================硬件 SPI 驱动==================================================

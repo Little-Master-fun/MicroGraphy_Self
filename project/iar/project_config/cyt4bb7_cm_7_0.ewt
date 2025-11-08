@@ -1482,6 +1482,12 @@
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_motor.h</name>
             </file>
             <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\driver_photoelectric.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\code\drivers\driver_photoelectric.h</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\..\code\drivers\driver_sch16tk10.c</name>
             </file>
             <file>

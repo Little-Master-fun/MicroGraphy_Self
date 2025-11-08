@@ -28,15 +28,15 @@
 #define M_PI 3.14159265358979323846
 #endif
 //=================================================硬件引脚定义================================================
-// 左编码器引脚定义（原理图 H12）
-#define ENCODER_LEFT                     (TC_CH07_ENCODER)                   // 左编码器接口
-#define ENCODER_LEFT_A                   (TC_CH07_ENCODER_CH1_P07_6)         // 左编码器A相引脚 P7.6
-#define ENCODER_LEFT_B                   (TC_CH07_ENCODER_CH2_P07_7)         // 左编码器B相引脚 P7.7
+// 左编码器引脚定义 - 已交换
+#define ENCODER_LEFT                     (TC_CH20_ENCODER)                   // 左编码器接口
+#define ENCODER_LEFT_A                   (TC_CH20_ENCODER_CH1_P08_1)         // 左编码器A相引脚 P8.1
+#define ENCODER_LEFT_B                   (TC_CH20_ENCODER_CH2_P08_2)         // 左编码器B相引脚 P8.2
 
-// 右编码器引脚定义（原理图 H13）
-#define ENCODER_RIGHT                    (TC_CH21_ENCODER)                   // 右编码器接口
-#define ENCODER_RIGHT_A                  (TC_CH21_ENCODER_CH1_P08_2)         // 右编码器A相引脚 P8.2
-#define ENCODER_RIGHT_B                  (TC_CH21_ENCODER_CH2_P08_3)         // 右编码器B相引脚 P8.3
+// 右编码器引脚定义 - 已交换
+#define ENCODER_RIGHT                    (TC_CH07_ENCODER)                   // 右编码器接口
+#define ENCODER_RIGHT_A                  (TC_CH07_ENCODER_CH1_P07_6)         // 右编码器A相引脚 P7.6
+#define ENCODER_RIGHT_B                  (TC_CH07_ENCODER_CH2_P07_7)         // 右编码器B相引脚 P7.7
 
 //=================================================配置参数定义================================================
 #define ENCODER_SAMPLE_TIME             (2)        // 采样时间间隔 (ms)

@@ -23,13 +23,20 @@
 #include "zf_common_headfile.h"
 
 // 硬件引脚定义 / Hardware pin definitions (根据原理图 U42)
-#define EXTRESN_PORT    P07_5               // 复位引脚 / Reset pin (引脚45)
-#define SPI_CS_PIN      P07_4               // GPIO方式的片选引脚 / CS pin as GPIO (引脚44)
-#define SPI2_CS_PIN     SPI2_CS0_P07_4      // SPI外设的片选引脚 / CS pin for SPI peripheral
-#define SPI2_SCK_PIN    SPI2_CLK_P07_3      // SPI时钟引脚 / SPI clock pin (引脚43)
-#define SPI2_MISO_PIN   SPI2_MISO_P07_0     // SPI主设备输入引脚 / SPI master input pin (引脚41)
-#define SPI2_MOSI_PIN   SPI2_MOSI_P07_2     // SPI主设备输出引脚 / SPI master output pin (引脚42)
-#define GPIO_RESET      (P07_5)             // 备用复位引脚 / Alternative reset pin
+// 注意：原理图P07.x引脚无法用硬件SPI，使用软件SPI
+#define EXTRESN_PORT    P07_4               // 复位引脚 / Reset pin EXTRESN (引脚44)
+#define SPI_CS_PIN      P07_3               // GPIO方式的片选引脚 / CS pin as GPIO (引脚43)
+#define SOFT_SPI_SCK    P07_2               // 软件SPI时钟引脚 / Software SPI SCK pin (引脚42)
+#define SOFT_SPI_MOSI   P07_1               // 软件SPI MOSI引脚 / Software SPI MOSI pin (引脚41)
+#define SOFT_SPI_MISO   P07_0               // 软件SPI MISO引脚 / Software SPI MISO pin (引脚40)
+#define GPIO_RESET      (P07_4)             // 备用复位引脚 / Alternative reset pin
+
+// 软件SPI结构体
+static soft_spi_info_struct sch16_spi;
+
+// 外部函数声明（库的头文件声明与实现不一致，手动声明实际函数）
+// 注意：实际实现的函数名是 soft_spi_16bit_transfer，而头文件中声明的是 soft_spi_transfer_16bit
+extern void soft_spi_16bit_transfer(soft_spi_info_struct *soft_spi_obj, const uint16 *write_buffer, uint16 *read_buffer, uint32 len);
 
 // 静态变量定义 / Static variable definitions
 static pit_index_enum sampling_timer = PIT_CH0;  // 采样定时器通道 / Sampling timer channel
@@ -58,11 +65,11 @@ static void GPIO_init(void) {
 }
 
 /**
- * @brief  SPI外设初始化 / SPI peripheral initialization
+ * @brief  SPI外设初始化 / SPI peripheral initialization (使用软件SPI)
  */
 static void SPI_Init(void) {
-    // 修复SPI初始化函数调用
-    spi_init(SPI_2, SPI_MODE0, 1000000, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN, SPI_CS_NULL);
+    // 使用软件SPI，因为P07.x不支持硬件SPI :=(
+    soft_spi_init(&sch16_spi, 0, 1, SOFT_SPI_SCK, SOFT_SPI_MOSI, SOFT_SPI_MISO, SOFT_SPI_PIN_NULL);
 }
 
 /**
@@ -819,11 +826,12 @@ uint64_t hw_SPI48_Send_Request(uint64_t Request)
         txBuffer[size - index - 1] = (Request >> (index << 4)) & 0xFFFF;
     }
 
-    // Send tx buffer and receive rx buffer simultaneously
+    // Send tx buffer and receive rx buffer simultaneously (使用软件SPI)
     hw_CS_Low();
-    system_delay_us(10);  // Small delay for CS to settle
-    spi_transfer_16bit(SPI_2, txBuffer, rxBuffer, size);
-    system_delay_us(10);  // Small delay before releasing CS
+    system_delay_us(1);  // Small delay for CS to settle (根据SCH16TK10数据手册要求)
+    // 注意：使用实现文件中的实际函数名（库的头文件声明有误）
+    soft_spi_16bit_transfer(&sch16_spi, txBuffer, rxBuffer, size);
+    system_delay_us(1);  // Small delay before releasing CS
     hw_CS_High();
 
     // Create ReceivedData qword from received rx buffer (MISO data)

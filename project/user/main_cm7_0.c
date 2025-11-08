@@ -75,16 +75,18 @@ int main(void)
     encoder_init();
     
     // 4. 初始化AHRS姿态解算
-    ahrs_complementary_init();
+    //ahrs_complementary_init();
     
     
     // 5. 延时等待IMU稳定
     system_delay_ms(1000);
     
+    motor_set_target_speed(0.0f,0.0f);
+    motor_start_pwm_record();
     // 6. 启动定时器中断
-    pit_ms_init(PIT_CH2, 2);  // IMU数据采集 (1ms)
+    //pit_ms_init(PIT_CH2, 2);  // IMU数据采集 (1ms)
     pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
-    pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
+    //pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
     
     // 主循环
     while(true)

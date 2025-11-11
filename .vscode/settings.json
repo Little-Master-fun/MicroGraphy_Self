@@ -1,0 +1,5 @@
+{
+  // 文件编码设置
+  "files.encoding": "gbk",
+  "files.autoGuessEncoding": true
+}

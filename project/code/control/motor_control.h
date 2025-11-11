@@ -40,8 +40,8 @@
 #define MOTOR_LEFT_PI_KD_DEFAULT    (0.0f)       // 左电机微分系数
 
 // 右电机PI控制参数  
-#define MOTOR_RIGHT_PI_KP_DEFAULT   (1500.0f)    // 右电机比例系数
-#define MOTOR_RIGHT_PI_KI_DEFAULT   (625.0f)     // 右电机积分系数
+#define MOTOR_RIGHT_PI_KP_DEFAULT   (1700.0f)    // 右电机比例系数
+#define MOTOR_RIGHT_PI_KI_DEFAULT   (725.0f)     // 右电机积分系数
 #define MOTOR_RIGHT_PI_KD_DEFAULT   (0.0f)       // 右电机微分系数
 
 // 通用PI控制参数

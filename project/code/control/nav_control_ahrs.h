@@ -91,6 +91,7 @@ typedef struct {
     // 当前状态
     float current_yaw;          // 当前航向角 (度)
     float current_distance;     // 当前累积距离 (mm)
+    float provious_distance;       // 上次距离 (mm)
     float left_distance;        // 左轮累积距离 (mm)
     float right_distance;       // 右轮累积距离 (mm)
     

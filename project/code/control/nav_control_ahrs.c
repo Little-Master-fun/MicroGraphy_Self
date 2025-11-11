@@ -146,12 +146,12 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     }
     
     // 2. 系统已准备就绪，检查运行模式
-    if (nav_ahrs.mode != NAV_AHRS_MODE_REPLAY) {
-        // 非回放模式，停车
-        nav_ahrs.left_speed = 0.0f;
-        nav_ahrs.right_speed = 0.0f;
-        return NAV_AHRS_STATUS_OK;
-    }
+    //if (nav_ahrs.mode != NAV_AHRS_MODE_REPLAY) {
+    //    // 非回放模式，停车
+    //    nav_ahrs.left_speed = 0.0f;
+    //    nav_ahrs.right_speed = 0.0f;
+    //    return NAV_AHRS_STATUS_OK;
+    //}
     
     // 1. 更新当前状态（里程、航向角）
     nav_ahrs_status_enum status = nav_ahrs_update_state();
@@ -180,7 +180,7 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         if (nav_ahrs.path.loop_mode) {
             // 循环模式，重置到起点
             nav_ahrs.path.current_index = 0;
-            nav_ahrs.current_distance = 0.0f;
+            nav_ahrs.provious_distance = nav_ahrs.current_distance;
             // 注意：双核架构中，编码器重置由CM7_0负责
             printf("[NAV_AHRS] 完成一圈，重新开始\n");
         } else {
@@ -354,14 +354,14 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
     }
     
     // 4. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
-    nav_ahrs.current_distance = shared_core0_data.distance;  // 单位: mm
+    nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.provious_distance;  // 单位: mm
     
     // 5. 获取当前航向角 - 从共享内存
     nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
     
     // 6. 更新当前路径点索引
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {
-        if (nav_ahrs.path.points[i].distance > nav_ahrs.current_distance) {
+        if (nav_ahrs.path.points[i].distance >= nav_ahrs.current_distance) {
             nav_ahrs.path.current_index = i;
             break;
         }

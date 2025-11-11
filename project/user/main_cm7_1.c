@@ -63,33 +63,35 @@ int main(void)
     system_delay_ms(2000);
     
     // 3. 等待AHRS陀螺仪校准完成
-    printf("[CORE1] 等待AHRS陀螺仪校准完成...\n");
-    while(!dual_core_read_ahrs_ready())
-    {
-        system_delay_ms(100);  // 每100ms检查一次
-    }
-    printf("[CORE1] AHRS校准完成，开始初始化导航系统\n");
+    //printf("[CORE1] 等待AHRS陀螺仪校准完成...\n");
+    //while(!dual_core_read_ahrs_ready())
+    //{
+    //    system_delay_ms(100);  // 每100ms检查一次
+    //}
+    //printf("[CORE1] AHRS校准完成，开始初始化导航系统\n");
     
     // 4. 初始化导航系统
     nav_ahrs_init();
     
     // 5. 生成测试路径（可选择正方形或直线）
     // 选项1: 生成正方形路径 (1m × 1m)
-    // test_nav_ahrs_generate_square_path(1.0f);
+     test_nav_ahrs_generate_square_path(1.0f);
     
     // 选项2: 生成直线路径 12m, 0度方向)
-    test_nav_ahrs_generate_straight_path(10.0f, 0.0f);
+    //test_nav_ahrs_generate_straight_path(1.0f, 0.0f);
     
     // 6. 延时等待系统稳定
     system_delay_ms(1000);
-    
-    // 7. 启动导航算法定时器
-    pit_ms_init(PIT_CH10, 5);  // 导航算法 (5ms) - CM7_1使用CH10避免与CM7_0冲突
     
     // 8. 启动导航
     nav_ahrs_reset();
     nav_ahrs_set_speed(1.0f);  // 设置基础速度
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
+    
+    // 7. 启动导航算法定时器
+    pit_ms_init(PIT_CH10, 5);  // 导航算法 (5ms) - CM7_1使用CH10避免与CM7_0冲突
+    
+    
     
     // 主循环
     while(true)

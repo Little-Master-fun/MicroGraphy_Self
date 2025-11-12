@@ -37,6 +37,15 @@ nav_ahrs_status_enum test_nav_ahrs_generate_square_path(float size);
  */
 nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float direction);
 
+/**
+ * @brief  生成长方形测试路径
+ * @param  length       长方形长边 (m)
+ * @param  width        长方形短边 (m)
+ * @retval 状态
+ * @note   生成一个长方形路径，顺序为：右(长边)->上(短边)->左(长边)->下(短边)
+ */
+nav_ahrs_status_enum test_nav_ahrs_generate_rectangle_path(float length, float width);
+
 //=================================================启动函数声明================================================
 
 /**

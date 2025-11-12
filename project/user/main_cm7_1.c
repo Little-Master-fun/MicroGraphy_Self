@@ -38,6 +38,8 @@
 #include "dual_core_comm.h"
 #include "test_nav_ahrs.h"
 
+#define EnFan              (P08_0)
+
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
 // 第二步 project->clean  等待下方进度条走完
@@ -56,38 +58,41 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_info_init();                  // 调试串口信息初始化
     
-    // 1. 初始化双核通信（使用DCache同步方式，不禁用DCache）
+    // 初始化双核通信（使用DCache同步方式，不禁用DCache）
     dual_core_comm_init_core1();
     
-    // 2. 等待CM7_0初始化完成
-    system_delay_ms(2000);
+    // 等待CM7_0初始化完成
+    system_delay_ms(5000);
     
-    // 3. 等待AHRS陀螺仪校准完成
-    //printf("[CORE1] 等待AHRS陀螺仪校准完成...\n");
-    //while(!dual_core_read_ahrs_ready())
-    //{
-    //    system_delay_ms(100);  // 每100ms检查一次
-    //}
-    //printf("[CORE1] AHRS校准完成，开始初始化导航系统\n");
+    // 负压
+
+    gpio_init(EnFan, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+
+;
     
-    // 4. 初始化导航系统
+    // 初始化导航系统
     nav_ahrs_init();
     
-    // 5. 生成测试路径（可选择正方形或直线）
-    // 选项1: 生成正方形路径 (1m × 1m)
-     test_nav_ahrs_generate_square_path(1.0f);
-    
-    // 选项2: 生成直线路径 12m, 0度方向)
+    // 生成测试路径
+    // 生成正方形路径 (1m × 1m)
+    //test_nav_ahrs_generate_square_path(0.7f)
+      ;
+    // 生成长方形路径 (1m × 0.5m)
+    test_nav_ahrs_generate_rectangle_path(0.7f, 0.3f);
+
+    // 生成直线路径
     //test_nav_ahrs_generate_straight_path(1.0f, 0.0f);
     
-    // 6. 延时等待系统稳定
+    // 延时等待系统稳定
     system_delay_ms(1000);
     
-    // 8. 启动导航
+    // 启动导航
     nav_ahrs_reset();
     nav_ahrs_set_speed(1.0f);  // 设置基础速度
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
     
+    // ahrs_set_pi_params(0.005f, 0.0001f);  // 设置AHRS PI参数，提升航向角稳定性
+
     // 7. 启动导航算法定时器
     pit_ms_init(PIT_CH10, 5);  // 导航算法 (5ms) - CM7_1使用CH10避免与CM7_0冲突
     

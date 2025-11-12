@@ -1,5 +1,16 @@
 {
   // 文件编码设置
   "files.encoding": "gbk",
-  "files.autoGuessEncoding": true
+  "files.autoGuessEncoding": true,
+
+  // 关闭 C/C++ 错误警告
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.intelliSenseEngine": "disabled",
+
+  // 关闭问题面板中的错误显示
+  "problems.visibility": false,
+
+  // 可选：关闭其他语言的错误检查
+  "editor.lightbulb.enabled": "off",
+  "editor.parameterHints.enabled": false
 }

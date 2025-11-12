@@ -163,6 +163,112 @@ nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float di
     return NAV_AHRS_STATUS_OK;
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     生成长方形测试路径
+// 参数说明     length          长方形长边 (m)
+// 参数说明     width           长方形短边 (m)
+// 返回参数     状态
+//-------------------------------------------------------------------------------------------------------------------
+nav_ahrs_status_enum test_nav_ahrs_generate_rectangle_path(float length, float width)
+{
+    if (!nav_ahrs.initialized) {
+        return NAV_AHRS_STATUS_NOT_INIT;
+    }
+    
+    // 计算参数
+    float perimeter = 2.0f * (length + width);  // 周长 (m)
+    float total_distance = perimeter * 1000.0f;  // 总距离 (mm)
+    
+    // 每条边的距离 (mm)
+    float distance_long = length * 1000.0f;   // 长边距离
+    float distance_short = width * 1000.0f;   // 短边距离
+    
+    // 生成路径点
+    uint16 point_idx = 0;
+    float current_distance = 0.0f;
+    
+    // 第一条边：0° (向右, 长边)
+    float yaw = 0.0f;
+    float side1_end = distance_long;
+    while (current_distance < side1_end && point_idx < NAV_AHRS_MAX_POINTS) {
+        nav_ahrs.path.points[point_idx].yaw = yaw;
+        nav_ahrs.path.points[point_idx].distance = current_distance;
+        point_idx++;
+        current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+    }
+    
+    // 第二条边：90° (向上, 短边)
+    yaw = 90.0f;
+    float side2_end = distance_long + distance_short;
+    while (current_distance < side2_end && point_idx < NAV_AHRS_MAX_POINTS) {
+        nav_ahrs.path.points[point_idx].yaw = yaw;
+        nav_ahrs.path.points[point_idx].distance = current_distance;
+        point_idx++;
+        current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+    }
+    
+    // 第三条边：180° (向左, 长边)
+    yaw = 180.0f;
+    float side3_end = 2.0f * distance_long + distance_short;
+    while (current_distance < side3_end && point_idx < NAV_AHRS_MAX_POINTS) {
+        nav_ahrs.path.points[point_idx].yaw = yaw;
+        nav_ahrs.path.points[point_idx].distance = current_distance;
+        point_idx++;
+        current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+    }
+    
+    // 第四条边：270° (向下, 短边)
+    yaw = 270.0f;
+    while (current_distance < total_distance && point_idx < NAV_AHRS_MAX_POINTS) {
+        nav_ahrs.path.points[point_idx].yaw = yaw;
+        nav_ahrs.path.points[point_idx].distance = current_distance;
+        point_idx++;
+        current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+    }
+    
+    // 添加转弯过渡点（平滑转角）
+    uint16 corner_indices[] = {
+        (uint16)(distance_long / NAV_AHRS_DISTANCE_PER_POINT),                           // 第一个转角
+        (uint16)((distance_long + distance_short) / NAV_AHRS_DISTANCE_PER_POINT),        // 第二个转角
+        (uint16)((2.0f * distance_long + distance_short) / NAV_AHRS_DISTANCE_PER_POINT)  // 第三个转角
+    };
+    
+    // 平滑转角（添加过渡段）
+    for (int i = 0; i < 3; i++) {
+        uint16 corner_idx = corner_indices[i];
+        if (corner_idx > 5 && corner_idx < point_idx - 5) {
+            float angle_start = nav_ahrs.path.points[corner_idx - 5].yaw;
+            float angle_end = nav_ahrs.path.points[corner_idx + 5].yaw;
+            
+            // 处理角度跨越问题
+            if (fabs(angle_end - angle_start) > 180.0f) {
+                if (angle_end > angle_start) {
+                    angle_start += 360.0f;
+                } else {
+                    angle_end += 360.0f;
+                }
+            }
+            
+            // 线性插值过渡段
+            for (int j = -4; j <= 4; j++) {
+                float ratio = (j + 4) / 8.0f;
+                float smooth_yaw = angle_start + (angle_end - angle_start) * ratio;
+                // 归一化角度
+                while (smooth_yaw > 180.0f) smooth_yaw -= 360.0f;
+                while (smooth_yaw <= -180.0f) smooth_yaw += 360.0f;
+                nav_ahrs.path.points[corner_idx + j].yaw = smooth_yaw;
+            }
+        }
+    }
+    
+    nav_ahrs.path.total_points = point_idx;
+    nav_ahrs.path.current_index = 0;
+    nav_ahrs.path.loop_mode = 1;  // 循环模式
+    nav_ahrs.path_loaded = 1;
+    
+    return NAV_AHRS_STATUS_OK;
+}
+
 //=================================================核心函数================================================
 
 /**

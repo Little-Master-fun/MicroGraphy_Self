@@ -179,30 +179,37 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     if (nav_ahrs.path.current_index >= nav_ahrs.path.total_points - 1) {
         if (nav_ahrs.path.loop_mode) {
             // 循环模式，重置到起点
+            printf("[NAV_AHRS] 检测到一圈完成，准备循环重启...\n");
             
             // 重置距离基准为当前累积距离
             nav_ahrs.previous_distance = shared_core0_data.distance;
             
             // 重新计算相对距离（应该接近0）
-            nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance;
+            nav_ahrs.current_distance = 0.0f;  // 强制设为0，避免累积误差
             
-            // 重置索引
+            // 重置索引到起点
             nav_ahrs.path.current_index = 0;
             
-            // 立即重新查找当前路径点（防止索引卡住）
-            for (uint16 i = 0; i < nav_ahrs.path.total_points; i++) {
-                if (nav_ahrs.path.points[i].distance >= nav_ahrs.current_distance) {
-                    nav_ahrs.path.current_index = i;
-                    break;
-                }
-            }
+            // 重置前瞻点索引
+            nav_ahrs.lookahead_index = 0;
             
             // 重置PID积分项，避免上一圈的积分影响
             nav_ahrs.pid_turn.integral = 0.0f;
             nav_ahrs.pid_straight.integral = 0.0f;
             
-            printf("[NAV_AHRS] 循环重启完成 (新index: %d, 新距离: %.1f mm)\n", 
+            // 重置PID的上一次误差
+            nav_ahrs.pid_turn.error_last = 0.0f;
+            nav_ahrs.pid_straight.error_last = 0.0f;
+            
+            printf("[NAV_AHRS] 循环重启完成 (index: %d, 距离重置为: %.1f mm)\n", 
                    nav_ahrs.path.current_index, nav_ahrs.current_distance);
+            
+            // 添加额外的调试信息
+            printf("[NAV_AHRS] 重启后状态检查:\n");
+            printf("  - previous_distance: %.1f mm\n", nav_ahrs.previous_distance);
+            printf("  - shared_distance: %.1f mm\n", shared_core0_data.distance);
+            printf("  - lookahead_index: %d\n", nav_ahrs.lookahead_index);
+            printf("  - total_points: %d\n", nav_ahrs.path.total_points);
         } else {
             // 非循环模式，停车
             nav_ahrs.mode = NAV_AHRS_MODE_IDLE;
@@ -380,11 +387,19 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
     nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
     
     // 6. 更新当前路径点索引
+    // 从当前索引开始向后查找，找到第一个距离大于等于当前距离的点
+    uint8 index_updated = 0;
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {
         if (nav_ahrs.path.points[i].distance >= nav_ahrs.current_distance) {
             nav_ahrs.path.current_index = i;
+            index_updated = 1;
             break;
         }
+    }
+    
+    // 如果没有找到（说明当前距离超过了所有路径点），使用最后一个点
+    if (!index_updated) {
+        nav_ahrs.path.current_index = nav_ahrs.path.total_points - 1;
     }
     
     return NAV_AHRS_STATUS_OK;

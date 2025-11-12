@@ -81,7 +81,7 @@ int main(void)
     //  延时等待IMU稳定
     system_delay_ms(1000);
     
-    motor_set_target_speed(0.0f,0.0f);
+    //motor_set_target_speed(0.0f,0.0f);
     motor_start_pwm_record();
     // 启动定时器中断
     pit_ms_init(PIT_CH2, 2);  // IMU数据采集 (1ms)

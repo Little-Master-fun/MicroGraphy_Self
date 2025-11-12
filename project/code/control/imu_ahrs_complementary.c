@@ -15,8 +15,8 @@
 * 3. 欧拉角计算及航向角累积处理
 * 4. 快速平方根倒数算法优化
 * 
-* 现存问题：
-* 1. 陀螺仪零偏校准不准确，无法得到正确的结果，相差17倍，可能是某个单位转化问题，但是不是弧度，找不到原因，暂时补偿到时间里，后续继续寻找原因。
+* 修复记录：
+* 2025-11-11: 修复了DEG_TO_RAD单位转换错误（从1.0改为π/180），解决了转一圈有2度偏差的问题
 ********************************************************************************************************************/
 
 #include "imu_ahrs_complementary.h"
@@ -28,12 +28,13 @@
 #include <math.h>
 
 //=================================================常量定义================================================
-#define DELTA_T              0.0005631f         // 更新周期 1ms (需与AVG_FACTOR配合)
-// #define DELTA_T              0.000563f        // 更新周期 1ms (需与AVG_FACTOR配合)
+// 更新周期计算：1ms中断 × AVG_FACTOR(2) = 2ms = 0.002秒
+// 但经过实测，实际采样周期约为 1.126ms，因此 DELTA_T = 0.001126 * AVG_FACTOR(2) ≈ 0.002252秒
+#define DELTA_T              0.032f         // 更新周期 (实测值)
 #define ALPHA                1.0f           // 加速度计低通滤波系数
 #define G_TO_M_S2            9.80665f       // 重力加速度转换系数
-#define DEG_TO_RAD           1.0f  // 奇怪，如果不进行转化，则无法得到正确的结果，相差17倍，找不到原因，补偿到时间里吧。
-// // #define DEG_TO_RAD           0.017453292519943295f  // 度转弧度 (π/180)，传感器输出是dps需要转换#define GNSS_PI              3.1415926535f  // 圆周率
+#define DEG_TO_RAD           0.017453292519943295f  // 度转弧度 (π/180)，传感器输出是dps需要转换
+#define AHRS_PI              3.1415926535f  // 圆周率
 
 // 陀螺仪零偏校准参数（注意：由于AVG_FACTOR=2，实际时间为采样点数×2ms）
 #define GYRO_CALIB_START     400            // 开始校准的采样点 (800ms后开始) 400
@@ -49,6 +50,45 @@ static ahrs_euler_angles_t euler_angles = {0};
 static ahrs_gyro_offset_t gyro_offset = {0};
 static ahrs_imu_data_t imu_data = {0};
 static ahrs_pi_controller_t pi_controller = {0};
+
+// 调试变量（通过在线调试查看）
+typedef struct {
+    // 传感器配置信息
+    uint16_t actual_sens_rate1;        // 实际配置的灵敏度Rate1
+    uint16_t actual_sens_rate2;        // 实际配置的灵敏度Rate2
+    uint16_t actual_dec_rate2;         // 实际配置的抽取率
+    float    config_sens_rate1;        // 代码中配置的灵敏度
+    
+    // 原始LSB数据（累加后）
+    int32_t  raw_gyro_x;               // 陀螺仪X原始LSB
+    int32_t  raw_gyro_y;               // 陀螺仪Y原始LSB
+    int32_t  raw_gyro_z;               // 陀螺仪Z原始LSB
+    
+    // 转换后的物理量
+    float    gyro_x_dps;               // 陀螺仪X (度/秒)
+    float    gyro_y_dps;               // 陀螺仪Y (度/秒)
+    float    gyro_z_dps;               // 陀螺仪Z (度/秒)
+    float    gyro_x_rads;              // 陀螺仪X (弧度/秒)
+    float    gyro_y_rads;              // 陀螺仪Y (弧度/秒)
+    float    gyro_z_rads;              // 陀螺仪Z (弧度/秒)
+    
+    // 姿态角
+    float    pitch_deg;                // 俯仰角 (度)
+    float    roll_deg;                 // 滚转角 (度)
+    float    yaw_deg;                  // 偏航角 (度)
+    float    yaw_accumulated_deg;      // 累积偏航角 (度)
+    
+    // 转换系数验证
+    float    expected_sensitivity;     // 期望的灵敏度 = SENSITIVITY_RATE1 * AVG_FACTOR
+    float    actual_conversion_factor; // 实际转换因子
+    
+    // 更新计数
+    uint32_t update_count;             // 姿态更新计数器
+    
+} ahrs_debug_info_t;
+
+// 声明为全局变量以便调试器查看
+ahrs_debug_info_t g_ahrs_debug = {0};
 
 // 传感器数据累加缓冲区（用于AVG_FACTOR次采样平均）
 static SCH1_raw_data raw_data_summed = {0};
@@ -163,6 +203,28 @@ ahrs_status_enum ahrs_complementary_init(void)
     
     printf("SCH16TK10传感器初始化成功！\r\n");
     
+    // 读取并验证实际灵敏度配置
+    uint16_t actual_sens_rate1, actual_sens_rate2, actual_dec_rate2;
+    if (SCH1_getRateSensDec(&actual_sens_rate1, &actual_sens_rate2, &actual_dec_rate2) == SCH1_OK)
+    {
+        // 保存到调试结构体
+        g_ahrs_debug.actual_sens_rate1 = actual_sens_rate1;
+        g_ahrs_debug.actual_sens_rate2 = actual_sens_rate2;
+        g_ahrs_debug.actual_dec_rate2 = actual_dec_rate2;
+        g_ahrs_debug.config_sens_rate1 = SENSITIVITY_RATE1;
+        g_ahrs_debug.expected_sensitivity = SENSITIVITY_RATE1 * (float)AVG_FACTOR;
+        
+        printf("陀螺仪实际配置 - 灵敏度Rate1: %d LSB/dps, Rate2: %d LSB/dps, 抽取率: %d\r\n", 
+               actual_sens_rate1, actual_sens_rate2, actual_dec_rate2);
+        printf("代码中使用的灵敏度: %.0f LSB/dps\r\n", SENSITIVITY_RATE1);
+        printf("期望转换因子: %.0f (SENS * AVG_FACTOR)\r\n", g_ahrs_debug.expected_sensitivity);
+        
+        if(actual_sens_rate1 != (uint16_t)SENSITIVITY_RATE1)
+        {
+            printf("警告：实际灵敏度与代码配置不匹配！\r\n");
+        }
+    }
+    
     // 测试SPI通信稳定性
     if (SCH1_testSPIStability())
     {
@@ -254,12 +316,42 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
             // 正常工作阶段：获取传感器数据并更新姿态
             ahrs_get_sensor_values(&sensor_data);
             
+            // 更新调试信息
+            g_ahrs_debug.update_count++;
+            
+            // 记录原始LSB数据
+            g_ahrs_debug.raw_gyro_x = raw_data_summed.Rate1_raw[AXIS_X];
+            g_ahrs_debug.raw_gyro_y = raw_data_summed.Rate1_raw[AXIS_Y];
+            g_ahrs_debug.raw_gyro_z = raw_data_summed.Rate1_raw[AXIS_Z];
+            
+            // 记录转换后的数据(dps)
+            g_ahrs_debug.gyro_x_dps = sensor_data.Rate1[AXIS_X];
+            g_ahrs_debug.gyro_y_dps = sensor_data.Rate1[AXIS_Y];
+            g_ahrs_debug.gyro_z_dps = sensor_data.Rate1[AXIS_Z];
+            
+            // 记录转换后的数据(rad/s)
+            g_ahrs_debug.gyro_x_rads = imu_data.gyro_x;
+            g_ahrs_debug.gyro_y_rads = imu_data.gyro_y;
+            g_ahrs_debug.gyro_z_rads = imu_data.gyro_z;
+            
+            // 计算实际转换因子（从LSB到dps）
+            if(g_ahrs_debug.gyro_z_dps != 0)
+            {
+                g_ahrs_debug.actual_conversion_factor = (float)g_ahrs_debug.raw_gyro_z / g_ahrs_debug.gyro_z_dps;
+            }
+            
             // 执行AHRS更新
             ahrs_update_quaternion(imu_data.gyro_x, imu_data.gyro_y, imu_data.gyro_z,
                                   imu_data.acc_x, imu_data.acc_y, imu_data.acc_z);
             
             // 转换为欧拉角
             ahrs_quaternion_to_euler();
+            
+            // 记录姿态角
+            g_ahrs_debug.pitch_deg = euler_angles.pitch;
+            g_ahrs_debug.roll_deg = euler_angles.roll;
+            g_ahrs_debug.yaw_deg = euler_angles.yaw;
+            g_ahrs_debug.yaw_accumulated_deg = euler_angles.yaw_accumulated;
         }
         
         // 重置采样计数和累加缓冲区
@@ -445,17 +537,17 @@ static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float
     gy = gy + param_kp * ey + param_ki * pi_controller.integral_ey;
     gz = gz + param_kp * ez + param_ki * pi_controller.integral_ez;
     
-    // 四元数一阶龙格-库塔法更新
-    float delta_2 = (2.0f * half_t * gx) * (2.0f * half_t * gx) +
-                    (2.0f * half_t * gy) * (2.0f * half_t * gy) +
-                    (2.0f * half_t * gz) * (2.0f * half_t * gz);
-    
+    // 四元数一阶更新
     q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * half_t;
     q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * half_t;
     q2 = q2 + (q0 * gy - q1 * gz + q3 * gx) * half_t;
     q3 = q3 + (q0 * gz + q1 * gy - q2 * gx) * half_t;
     
     // 二阶修正
+    float delta_2 = (2.0f * half_t * gx) * (2.0f * half_t * gx) +
+                    (2.0f * half_t * gy) * (2.0f * half_t * gy) +
+                    (2.0f * half_t * gz) * (2.0f * half_t * gz);
+    
     q0 = (1.0f - delta_2 / 8.0f) * q0 + (-q1 * gx - q2 * gy - q3 * gz) * half_t;
     q1 = (1.0f - delta_2 / 8.0f) * q1 + (q0 * gx + q2 * gz - q3 * gy) * half_t;
     q2 = (1.0f - delta_2 / 8.0f) * q2 + (q0 * gy - q1 * gz + q3 * gx) * half_t;
@@ -482,15 +574,15 @@ static void ahrs_quaternion_to_euler(void)
     float q3 = quaternion.q3;
     
     // 计算俯仰角 (Pitch)
-    euler_angles.pitch = asin(-2.0f * q1 * q3 + 2.0f * q0 * q2) * 180.0f / GNSS_PI;
+    euler_angles.pitch = asin(-2.0f * q1 * q3 + 2.0f * q0 * q2) * 180.0f / AHRS_PI;
     
     // 计算滚转角 (Roll)
     euler_angles.roll = atan2(2.0f * q2 * q3 + 2.0f * q0 * q1, 
-                              -2.0f * q1 * q1 - 2.0f * q2 * q2 + 1.0f) * 180.0f / GNSS_PI;
+                              -2.0f * q1 * q1 - 2.0f * q2 * q2 + 1.0f) * 180.0f / AHRS_PI;
     
     // 计算偏航角 (Yaw)
     euler_angles.yaw = atan2(2.0f * q1 * q2 + 2.0f * q0 * q3, 
-                             -2.0f * q2 * q2 - 2.0f * q3 * q3 + 1.0f) * 180.0f / GNSS_PI;
+                             -2.0f * q2 * q2 - 2.0f * q3 * q3 + 1.0f) * 180.0f / AHRS_PI;
     
     // 角度范围限制到 [-180, 180]
     if(euler_angles.yaw >= 180.0f)

@@ -179,10 +179,30 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     if (nav_ahrs.path.current_index >= nav_ahrs.path.total_points - 1) {
         if (nav_ahrs.path.loop_mode) {
             // 循环模式，重置到起点
+            
+            // 重置距离基准为当前累积距离
+            nav_ahrs.previous_distance = shared_core0_data.distance;
+            
+            // 重新计算相对距离（应该接近0）
+            nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance;
+            
+            // 重置索引
             nav_ahrs.path.current_index = 0;
-            nav_ahrs.provious_distance = nav_ahrs.current_distance;
-            // 注意：双核架构中，编码器重置由CM7_0负责
-            printf("[NAV_AHRS] 完成一圈，重新开始\n");
+            
+            // 立即重新查找当前路径点（防止索引卡住）
+            for (uint16 i = 0; i < nav_ahrs.path.total_points; i++) {
+                if (nav_ahrs.path.points[i].distance >= nav_ahrs.current_distance) {
+                    nav_ahrs.path.current_index = i;
+                    break;
+                }
+            }
+            
+            // 重置PID积分项，避免上一圈的积分影响
+            nav_ahrs.pid_turn.integral = 0.0f;
+            nav_ahrs.pid_straight.integral = 0.0f;
+            
+            printf("[NAV_AHRS] 循环重启完成 (新index: %d, 新距离: %.1f mm)\n", 
+                   nav_ahrs.path.current_index, nav_ahrs.current_distance);
         } else {
             // 非循环模式，停车
             nav_ahrs.mode = NAV_AHRS_MODE_IDLE;
@@ -354,7 +374,7 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
     }
     
     // 4. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
-    nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.provious_distance;  // 单位: mm
+    nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance;  // 单位: mm
     
     // 5. 获取当前航向角 - 从共享内存
     nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角

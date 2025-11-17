@@ -56,11 +56,11 @@ typedef struct
 typedef struct
 {
     float gyro_x;       // 陀螺仪X轴 (rad/s)
-    float gyro_y;       // 陀螺仪Y轴 (rad/s)
-    float gyro_z;       // 陀螺仪Z轴 (rad/s)
+    float gyro_y;       // 陀螺仪Y轴 
+    float gyro_z;       // 陀螺仪Z轴 
     float acc_x;        // 加速度计X轴 (g)
-    float acc_y;        // 加速度计Y轴 (g)
-    float acc_z;        // 加速度计Z轴 (g)
+    float acc_y;        // 加速度计Y轴 
+    float acc_z;        // 加速度计Z轴 
 } ahrs_imu_data_t;
 
 // PI控制器结构体

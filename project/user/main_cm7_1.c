@@ -78,7 +78,7 @@ int main(void)
     //test_nav_ahrs_generate_square_path(0.7f)
       ;
     // 生成长方形路径 (1m × 0.5m)
-    test_nav_ahrs_generate_rectangle_path(0.7f, 0.3f);
+    test_nav_ahrs_generate_rectangle_path(0.8f, 0.15f);
 
     // 生成直线路径
     //test_nav_ahrs_generate_straight_path(1.0f, 0.0f);

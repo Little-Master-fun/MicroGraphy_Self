@@ -1,11 +1,11 @@
 /*********************************************************************************************************************
 * 文件名称          nav_control_ahrs.c
 * 功能说明          基于航向角跟踪的导航控制系统实现文件
-* 作者              AI Assistant
+* 作者              LittleMaster
 * 版本信息          v1.0
 * 修改记录
 * 日期              作者                版本
-* 2025-01-XX        AI Assistant       1.0v
+* 2025-09-24        LittleMaster       1.0v
 * 
 * 文件作用说明：
 * 本文件实现类似dog项目的航向角跟踪导航系统
@@ -43,8 +43,8 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     memset(&nav_ahrs, 0, sizeof(nav_ahrs_controller_t));
     
     // 初始化转弯PID参数（大误差，快速响应）
-    nav_ahrs.pid_turn.kp = 0.3f;
-    nav_ahrs.pid_turn.ki = 0.05f;
+    nav_ahrs.pid_turn.kp = 0.55f;
+    nav_ahrs.pid_turn.ki = 0.005f;
     nav_ahrs.pid_turn.kd = 0.03f;
     nav_ahrs.pid_turn.integral_limit = 50.0f;
     

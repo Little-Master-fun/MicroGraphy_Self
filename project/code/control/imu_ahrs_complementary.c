@@ -1,22 +1,24 @@
 /*********************************************************************************************************************
-* ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½          imu_ahrs_complementary.c
-* ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½          ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½AHRSï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½ï¿½Î¿ï¿½dog\DOG_KEYï¿½ï¿½Ä¿ï¿½ï¿½
-* ï¿½ï¿½ï¿½ï¿½              LittleMaster
-* ï¿½æ±¾ï¿½ï¿½Ï¢          v1.0
-* ï¿½Þ¸Ä¼ï¿½Â¼
-* ï¿½ï¿½ï¿½ï¿½              ï¿½ï¿½ï¿½ï¿½                ï¿½æ±¾
+* ÎÄ¼þÃû³Æ          imu_ahrs_complementary.c
+* ¹¦ÄÜËµÃ÷          »ùÓÚËÄÔªÊýµÄAHRS»¥²¹ÂË²¨Æ÷ÊµÏÖ£¨²Î¿¼dog\DOG_KEYÏîÄ¿£©
+* ×÷Õß              LittleMaster
+* °æ±¾ÐÅÏ¢          v1.0
+* ÐÞ¸Ä¼ÇÂ¼
+* ÈÕÆÚ              ×÷Õß                °æ±¾
 * 2025-10-11        LittleMaster       1.0v
 * 2025-10-20        LittleMaster       2.0v
+* 2025-11-18        LittleMaster       3.0v
 * 
-* ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½
-* ï¿½ï¿½ï¿½Ä¼ï¿½Êµï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½AHRSï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¹ï¿½ï¿½Ü£ï¿½
-* 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½Ì¬Ð£×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ô¶ï¿½Ð£×¼ï¿½ï¿½
-* 2. ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½Â£ï¿½ï¿½ï¿½PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¯ï¿½Æ²ï¿½ï¿½ï¿½ï¿½ï¿½
-* 3. Å·ï¿½ï¿½ï¿½Ç¼ï¿½ï¿½ã¼°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û»ï¿½ï¿½ï¿½ï¿½ï¿½
-* 4. ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ï¿½Å»ï¿½
+* ÎÄ¼þ×÷ÓÃËµÃ÷£º
+* ±¾ÎÄ¼þÊµÏÖ»ùÓÚËÄÔªÊýµÄAHRS×ËÌ¬½âËãËã·¨£¬°üº¬ÒÔÏÂ¹¦ÄÜ£º
+* 1. ÍÓÂÝÒÇÁãÆ«¶¯Ì¬Ð£×¼£¨Æô¶¯Ê±×Ô¶¯Ð£×¼£©
+* 2. ËÄÔªÊý×ËÌ¬¸üÐÂ£¨º¬PI¿ØÖÆÆ÷Æ¯ÒÆ²¹³¥£©
+* 3. Å·À­½Ç¼ÆËã¼°º½Ïò½ÇÀÛ»ý´¦Àí
+* 4. ¿ìËÙÆ½·½¸ùµ¹ÊýËã·¨ÓÅ»¯
 * 
-* ï¿½Þ¸ï¿½ï¿½ï¿½Â¼ï¿½ï¿½
-* 2025-11-11: ï¿½Þ¸ï¿½ï¿½ï¿½DEG_TO_RADï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½ï¿½ó£¨´ï¿½1.0ï¿½ï¿½Îªï¿½ï¿½/180ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªÒ»È¦ï¿½ï¿½2ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+* ÐÞ¸´¼ÇÂ¼£º
+* 2025-11-11: ÐÞ¸´ÁËDEG_TO_RADµ¥Î»×ª»»´íÎó£¨´Ó1.0¸ÄÎª¦Ð/180£©£¬½â¾öÁË×ªÒ»È¦ÓÐ2¶ÈÆ«²îµÄÎÊÌâ
+* 2025-11-18: Íê³ÉÁËº½Ïò½ÇµÄµ÷Õû£¬Ò»ÇÐ¶¼±»ÎÒÏë¸´ÔÓÁË£¬´óµÀÖÁ¼òÑ½£¬Ð¡³µ²»ÊÇÎÞÈË»ú£¬Å×ÆúÁËËÄÔªÊý£¬Å·À­½Ç£¬¸÷ÖÖ¸´ÔÓµÄÂË²¨£¬¼òµ¥µÄ1D»ý·Ö¾ÍÐÐÁË
 ********************************************************************************************************************/
 
 #include "imu_ahrs_complementary.h"
@@ -27,28 +29,28 @@
 #include <string.h>
 #include <math.h>
 
-//=================================================ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½================================================
+//=================================================³£Á¿¶¨Òå================================================
 
 
-//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ã£º1msï¿½Ð¶ï¿½ ï¿½ï¿½ AVG_FACTOR(2) = 2ms = 0.002ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½â£¬Êµï¿½Ê²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼Îª 1.126msï¿½ï¿½ï¿½ï¿½ï¿½ DELTA_T = 0.001126 * AVG_FACTOR(2) ï¿½ï¿½ 0.002252ï¿½ë£¬ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ÎªÊ²Ã´ï¿½ï¿½0.032ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½
-// ï¿½â£¬ÎªÊ²Ã´Ã»ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½ï¿½Ø£ï¿½ï¿½ï¿½ï¿½ëµ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö²ï¿½Å¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½ï¿½Ô£ï¿½sbï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//  ¸üÐÂÖÜÆÚ¼ÆËã£º1msÖÐ¶Ï ¡Á AVG_FACTOR(2) = 2ms = 0.002Ãë
+// µ«¾­¹ýÊµ²â£¬Êµ¼Ê²ÉÑùÖÜÆÚÔ¼Îª 1.126ms£¬Òò´Ë DELTA_T = 0.001126 * AVG_FACTOR(2) ¡Ö 0.002252Ãë£¬²»ÒªÎÊÎÒÎªÊ²Ã´ÊÇ0.032£¬ÎÊ¾ÍÊÇ¾­Ñé
+// ²â£¬ÎªÊ²Ã´Ã»ÓÐ»³ÒÉÍùÄê´úÂëÉèÖÃ´íÁËÄØ£¬ÉêÇëµ½ÍêÕûÊý¾ÝÊÖ²á²Å¿´¼û£¬ÁéÃô¶ÈÅäÖÃ¶¼²»¶Ô£¬sbÍùÄê´úÂë
 
 
-#define DELTA_T              0.002f         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
-#define ALPHA                0.2f           // ï¿½ï¿½ï¿½Ù¶È¼Æµï¿½Í¨ï¿½Ë²ï¿½Ïµï¿½ï¿½
-#define G_TO_M_S2            9.80665f       // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½×ªï¿½ï¿½Ïµï¿½ï¿½
-#define DEG_TO_RAD           0.017453292519943295f  // ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½/180)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½dpsï¿½ï¿½Òª×ªï¿½ï¿½
-#define AHRS_PI              3.1415926535f  // Ô²ï¿½ï¿½ï¿½ï¿½
+#define DELTA_T              0.002f         // ¸üÐÂÖÜÆÚ 
+#define ALPHA                0.2f           // ¼ÓËÙ¶È¼ÆµÍÍ¨ÂË²¨ÏµÊý
+#define G_TO_M_S2            9.80665f       // ÖØÁ¦¼ÓËÙ¶È×ª»»ÏµÊý
+#define DEG_TO_RAD           0.017453292519943295f  // ¶È×ª»¡¶È (¦Ð/180)£¬´«¸ÐÆ÷Êä³öÊÇdpsÐèÒª×ª»»
+#define AHRS_PI              3.1415926535f  // Ô²ÖÜÂÊ
 
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«Ð£×¼ï¿½ï¿½ï¿½ï¿½
-#define GYRO_CALIB_START     400            // ï¿½ï¿½Ê¼Ð£×¼ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ (800msï¿½ï¿½Ê¼) 400
-#define GYRO_CALIB_END       1400           // ï¿½ï¿½ï¿½ï¿½Ð£×¼ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ (2800ms)
-#define GYRO_CALIB_SAMPLES   1000           // Ð£×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½Û¼ï¿½1000ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½)
-#define GYRO_CALIB_FINISH    1500           // Ð£×¼ï¿½ï¿½Éµï¿½ (3000ms)
-#define GYRO_READY_COUNT     1800           // ÏµÍ³×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (3600msï¿½ï¿½Ô¼3.6ï¿½ï¿½)
+// ÍÓÂÝÒÇÁãÆ«Ð£×¼²ÎÊý
+#define GYRO_CALIB_START     400            // ¿ªÊ¼Ð£×¼µÄ²ÉÑùµã (800msºó¿ªÊ¼) 400
+#define GYRO_CALIB_END       1400           // ½áÊøÐ£×¼µÄ²ÉÑùµã (2800ms)
+#define GYRO_CALIB_SAMPLES   1000           // Ð£×¼²ÉÑùµãÊý (ÀÛ¼Ó1000´Î£¬³ÖÐø2Ãë)
+#define GYRO_CALIB_FINISH    1500           // Ð£×¼Íê³Éµã (3000ms)
+#define GYRO_READY_COUNT     1800           // ÏµÍ³×¼±¸¾ÍÐ÷µã (3600ms£¬Ô¼3.6Ãë)
 
-//=================================================È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½================================================
+//=================================================È«¾Ö±äÁ¿¶¨Òå================================================
 static ahrs_system_t ahrs_system = {0};
 static ahrs_quaternion_t quaternion = {1.0f, 0.0f, 0.0f, 0.0f};
 static ahrs_euler_angles_t euler_angles = {0};
@@ -56,218 +58,218 @@ static ahrs_gyro_offset_t gyro_offset = {0};
 static ahrs_imu_data_t imu_data = {0};
 static ahrs_pi_controller_t pi_controller = {0};
 
-// 1D \xd2\xf9\xcc\xab\xd1\xd0\xba\xcd\xb2\xbf (\xb6\xc8)\r
-static float yaw_gyro = 0.0f;\r
-static uint8 yaw_gyro_synced = 0;  // ÃƒÂ¿Â±???
+// 1D Yaw »ý·ÖÆ÷£¨´¿ÍÓÂÝ»ý·ÖµÄº½Ïò½Ç£©
+static float yaw_gyro = 0.0f;  // ´¿ÍÓÂÝ»ý·ÖµÄº½Ïò½Ç£¨¶È£©[-180, 180]
 
-// ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½ï¿½Ô²é¿´ï¿½ï¿½
+// µ÷ÊÔ±äÁ¿£¨Í¨¹ýÔÚÏßµ÷ÊÔ²é¿´£©
 typedef struct {
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
-    uint16_t actual_sens_rate1;        // Êµï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rate1
-    uint16_t actual_sens_rate2;        // Êµï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rate2
-    uint16_t actual_dec_rate2;         // Êµï¿½ï¿½ï¿½ï¿½ï¿½ÃµÄ³ï¿½È¡ï¿½ï¿½
-    float    config_sens_rate1;        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ´«¸ÐÆ÷ÅäÖÃÐÅÏ¢
+    uint16_t actual_sens_rate1;        // Êµ¼ÊÅäÖÃµÄÁéÃô¶ÈRate1
+    uint16_t actual_sens_rate2;        // Êµ¼ÊÅäÖÃµÄÁéÃô¶ÈRate2
+    uint16_t actual_dec_rate2;         // Êµ¼ÊÅäÖÃµÄ³éÈ¡ÂÊ
+    float    config_sens_rate1;        // ´úÂëÖÐÅäÖÃµÄÁéÃô¶È
     
-    // Ô­Ê¼LSBï¿½ï¿½ï¿½Ý£ï¿½ï¿½Û¼Óºï¿½
-    int32_t  raw_gyro_x;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½XÔ­Ê¼LSB
-    int32_t  raw_gyro_y;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½YÔ­Ê¼LSB
-    int32_t  raw_gyro_z;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ZÔ­Ê¼LSB
+    // Ô­Ê¼LSBÊý¾Ý£¨ÀÛ¼Óºó£©
+    int32_t  raw_gyro_x;               // ÍÓÂÝÒÇXÔ­Ê¼LSB
+    int32_t  raw_gyro_y;               // ÍÓÂÝÒÇYÔ­Ê¼LSB
+    int32_t  raw_gyro_z;               // ÍÓÂÝÒÇZÔ­Ê¼LSB
     
-    // ×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    float    gyro_x_dps;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½X (ï¿½ï¿½/ï¿½ï¿½)
-    float    gyro_y_dps;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Y (ï¿½ï¿½/ï¿½ï¿½)
-    float    gyro_z_dps;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Z (ï¿½ï¿½/ï¿½ï¿½)
-    float    gyro_x_rads;              // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½X (ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½)
-    float    gyro_y_rads;              // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Y (ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½)
-    float    gyro_z_rads;              // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Z (ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½)
+    // ×ª»»ºóµÄÎïÀíÁ¿
+    float    gyro_x_dps;               // ÍÓÂÝÒÇX (¶È/Ãë)
+    float    gyro_y_dps;               // ÍÓÂÝÒÇY (¶È/Ãë)
+    float    gyro_z_dps;               // ÍÓÂÝÒÇZ (¶È/Ãë)
+    float    gyro_x_rads;              // ÍÓÂÝÒÇX (»¡¶È/Ãë)
+    float    gyro_y_rads;              // ÍÓÂÝÒÇY (»¡¶È/Ãë)
+    float    gyro_z_rads;              // ÍÓÂÝÒÇZ (»¡¶È/Ãë)
     
-    // ï¿½ï¿½Ì¬ï¿½ï¿½
-    float    pitch_deg;                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½)
-    float    roll_deg;                 // ï¿½ï¿½×ªï¿½ï¿½ (ï¿½ï¿½)
-    float    yaw_deg;                  // Æ«ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½)
-    float    yaw_accumulated_deg;      // ï¿½Û»ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½)
+    // ×ËÌ¬½Ç
+    float    pitch_deg;                // ¸©Ñö½Ç (¶È)
+    float    roll_deg;                 // ¹ö×ª½Ç (¶È)
+    float    yaw_deg;                  // Æ«º½½Ç (¶È)
+    float    yaw_accumulated_deg;      // ÀÛ»ýÆ«º½½Ç (¶È)
+    float    yaw_gyro_deg;             // 1D Yaw»ý·ÖÆ÷º½Ïò½Ç (¶È) [-180, 180]
     
-    // ×ªï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½Ö¤
-    float    expected_sensitivity;     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ = SENSITIVITY_RATE1 * AVG_FACTOR
-    float    actual_conversion_factor; // Êµï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ×ª»»ÏµÊýÑéÖ¤
+    float    expected_sensitivity;     // ÆÚÍûµÄÁéÃô¶È = SENSITIVITY_RATE1 * AVG_FACTOR
+    float    actual_conversion_factor; // Êµ¼Ê×ª»»Òò×Ó
     
-    // ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½
-    uint32_t update_count;             // ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¸üÐÂ¼ÆÊý
+    uint32_t update_count;             // ×ËÌ¬¸üÐÂ¼ÆÊýÆ÷
     
 } ahrs_debug_info_t;
 
-// ï¿½ï¿½ï¿½ï¿½ÎªÈ«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é¿´
+// ÉùÃ÷ÎªÈ«¾Ö±äÁ¿ÒÔ±ãµ÷ÊÔÆ÷²é¿´
 ahrs_debug_info_t g_ahrs_debug = {0};
 
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û¼Ó»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AVG_FACTORï¿½Î²ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½
+// ´«¸ÐÆ÷Êý¾ÝÀÛ¼Ó»º³åÇø£¨ÓÃÓÚAVG_FACTOR´Î²ÉÑùÆ½¾ù£©
 static SCH1_raw_data raw_data_summed = {0};
 static uint32 sample_count = 0;
 
-// Ð£×¼ï¿½ï¿½Ø±ï¿½ï¿½ï¿½
+// Ð£×¼Ïà¹Ø±äÁ¿
 static uint32 calibration_count = 0;
 static uint8 system_ready = 0;
 static float gyro_sum_x = 0.0f;
 static float gyro_sum_y = 0.0f;
 static float gyro_sum_z = 0.0f;
 
-// PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-static float param_kp = 0.0f;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨ï¿½É¸ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-static float param_ki = 0.0f;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ£¨ï¿½É¸ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// PI¿ØÖÆÆ÷²ÎÊý
+static float param_kp = 0.0f;   // ±ÈÀýÔöÒæ£¨¿É¸ù¾ÝÐèÒªµ÷Õû£©
+static float param_ki = 0.0f;   // »ý·ÖÔöÒæ£¨¿É¸ù¾ÝÐèÒªµ÷Õû£©
 
-// ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½
+// º½Ïò½Ç´¦Àí
 static float yaw_offset = 0.0f;
 static int8 direction_change = 0;
 static float last_yaw = 0.0f;
 
-//=================================================ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½================================================
+//=================================================ÄÚ²¿º¯ÊýÉùÃ÷================================================
 static float fast_inv_sqrt(float x);
 static void ahrs_get_sensor_values(SCH1_result *sensor_data);
 static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float ay, float az);
 static void ahrs_quaternion_to_euler(void);
 
-//=================================================ï¿½â²¿ï¿½Ó¿ï¿½Êµï¿½ï¿½================================================
+//=================================================Íâ²¿½Ó¿ÚÊµÏÖ================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½Ê¼ï¿½ï¿½AHRSÏµÍ³
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ï¿½ï¿½Ê¼ï¿½ï¿½×´Ì¬
+// º¯Êý¼ò½é     ³õÊ¼»¯AHRSÏµÍ³
+// ²ÎÊýËµÃ÷     ÎÞ
+// ·µ»Ø²ÎÊý     ³õÊ¼»¯×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_complementary_init(void)
 {
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½á¹¹
+    // Çå¿ÕËùÓÐÊý¾Ý½á¹¹
     memset(&ahrs_system, 0, sizeof(ahrs_system_t));
     memset(&gyro_offset, 0, sizeof(ahrs_gyro_offset_t));
     memset(&pi_controller, 0, sizeof(ahrs_pi_controller_t));
     
-    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½Îªï¿½ï¿½Î»ï¿½ï¿½Ôªï¿½ï¿½
+    // ³õÊ¼»¯ËÄÔªÊýÎªµ¥Î»ËÄÔªÊý
     quaternion.q0 = 1.0f;
     quaternion.q1 = 0.0f;
     quaternion.q2 = 0.0f;
     quaternion.q3 = 0.0f;
     
-    // ï¿½ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½ï¿½
+    // ÇåÁãÅ·À­½Ç
     euler_angles.pitch = 0.0f;
     euler_angles.roll = 0.0f;
     euler_angles.yaw = 0.0f;
     
-    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û¼Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ³õÊ¼»¯´«¸ÐÆ÷Êý¾ÝÀÛ¼Ó»º³åÇø
     memset(&raw_data_summed, 0, sizeof(SCH1_raw_data));
     sample_count = 0;
     
-    // ï¿½ï¿½Ê¼ï¿½ï¿½Ð£×¼ï¿½ï¿½ï¿½ï¿½
+    // ³õÊ¼»¯Ð£×¼±äÁ¿
     calibration_count = 0;
     system_ready = 0;
     gyro_sum_x = 0.0f;
     gyro_sum_y = 0.0f;
     gyro_sum_z = 0.0f;
     
-    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ³õÊ¼»¯º½Ïò½Ç´¦Àí±äÁ¿
     yaw_offset = 0.0f;
     direction_change = 0;
     last_yaw = 0.0f;
     
-    // ï¿½ï¿½ï¿½ï¿½PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    param_kp = 0.0f;  // ï¿½ï¿½ï¿½Ô¸ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    param_ki = 0.0f;  // ï¿½ï¿½ï¿½Ô¸ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ÉèÖÃPI¿ØÖÆÆ÷²ÎÊý
+    param_kp = 0.0f;  // ¿ÉÒÔ¸ù¾ÝÊµ¼ÊÇé¿öµ÷Õû
+    param_ki = 0.0f;  // ¿ÉÒÔ¸ù¾ÝÊµ¼ÊÇé¿öµ÷Õû
     
-    // ï¿½ï¿½Ê¼ï¿½ï¿½SCH16TK10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    printf("ï¿½ï¿½ï¿½Ú³ï¿½Ê¼ï¿½ï¿½SCH16TK10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½...\r\n");
+    // ³õÊ¼»¯SCH16TK10´«¸ÐÆ÷
+    printf("ÕýÔÚ³õÊ¼»¯SCH16TK10´«¸ÐÆ÷...\r\n");
     
     SCH1_filter sFilter;
     SCH1_sensitivity sSensitivity;
     SCH1_decimation sDecimation;
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (Hz)
-    sFilter.Rate12 = FILTER_RATE;    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½Æµï¿½ï¿½
-    sFilter.Acc12 = FILTER_ACC12;    // ï¿½ï¿½ï¿½Ù¶È¼ï¿½1,2ï¿½Ë²ï¿½Æµï¿½ï¿½
-    sFilter.Acc3 = FILTER_ACC3;      // ï¿½ï¿½ï¿½Ù¶È¼ï¿½3ï¿½Ë²ï¿½Æµï¿½ï¿½
+    // ÉèÖÃÂË²¨Æ÷²ÎÊý (Hz)
+    sFilter.Rate12 = FILTER_RATE;    // ÍÓÂÝÒÇÂË²¨ÆµÂÊ
+    sFilter.Acc12 = FILTER_ACC12;    // ¼ÓËÙ¶È¼Æ1,2ÂË²¨ÆµÂÊ
+    sFilter.Acc3 = FILTER_ACC3;      // ¼ÓËÙ¶È¼Æ3ÂË²¨ÆµÂÊ
 
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½ï¿½ (LSB/unit)
-    sSensitivity.Rate1 = SENSITIVITY_RATE1;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    sSensitivity.Rate2 = SENSITIVITY_RATE2;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    sSensitivity.Acc1 = SENSITIVITY_ACC1;     // ï¿½ï¿½ï¿½Ù¶È¼ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    sSensitivity.Acc2 = SENSITIVITY_ACC2;     // ï¿½ï¿½ï¿½Ù¶È¼ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-    sSensitivity.Acc3 = SENSITIVITY_ACC3;     // ï¿½ï¿½ï¿½Ù¶È¼ï¿½3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ÉèÖÃÁéÃô¶È²ÎÊý (LSB/unit)
+    sSensitivity.Rate1 = SENSITIVITY_RATE1;   // ÍÓÂÝÒÇ1ÁéÃô¶È
+    sSensitivity.Rate2 = SENSITIVITY_RATE2;   // ÍÓÂÝÒÇ2ÁéÃô¶È
+    sSensitivity.Acc1 = SENSITIVITY_ACC1;     // ¼ÓËÙ¶È¼Æ1ÁéÃô¶È
+    sSensitivity.Acc2 = SENSITIVITY_ACC2;     // ¼ÓËÙ¶È¼Æ2ÁéÃô¶È
+    sSensitivity.Acc3 = SENSITIVITY_ACC3;     // ¼ÓËÙ¶È¼Æ3ÁéÃô¶È
 
-    // ï¿½ï¿½ï¿½Ã³ï¿½È¡ï¿½ï¿½ï¿½ï¿½
-    sDecimation.Rate2 = DECIMATION_RATE;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½È¡ï¿½ï¿½
-    sDecimation.Acc2 = DECIMATION_ACC;     // ï¿½ï¿½ï¿½Ù¶È¼ï¿½2ï¿½ï¿½È¡ï¿½ï¿½
+    // ÉèÖÃ³éÈ¡²ÎÊý
+    sDecimation.Rate2 = DECIMATION_RATE;   // ÍÓÂÝÒÇ2³éÈ¡ÂÊ
+    sDecimation.Acc2 = DECIMATION_ACC;     // ¼ÓËÙ¶È¼Æ2³éÈ¡ÂÊ
 
-    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ³õÊ¼»¯´«¸ÐÆ÷
     int init_result = SCH1_init(sFilter, sSensitivity, sDecimation, false);
     
     if (init_result != SCH1_OK)
     {
-        printf("SCH16TK10ï¿½ï¿½Ê¼ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: %d\r\n", init_result);
+        printf("SCH16TK10³õÊ¼»¯Ê§°Ü£¬´íÎóÂë: %d\r\n", init_result);
         
-        // ï¿½ï¿½È¡×´Ì¬ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ¶ÁÈ¡×´Ì¬¼Ä´æÆ÷½øÐÐÕï¶Ï
         SCH1_status status;
         if (SCH1_getStatus(&status) == SCH1_OK)
         {
-            printf("×´Ì¬ï¿½ï¿½ï¿½ - Summary: 0x%04X, Common: 0x%04X\r\n", 
+            printf("×´Ì¬Õï¶Ï - Summary: 0x%04X, Common: 0x%04X\r\n", 
                    status.Summary, status.Common);
         }
         return AHRS_STATUS_ERROR;
     }
     
-    printf("SCH16TK10ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½\r\n");
+    printf("SCH16TK10´«¸ÐÆ÷³õÊ¼»¯³É¹¦£¡\r\n");
     
-    // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ö¤Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¶ÁÈ¡²¢ÑéÖ¤Êµ¼ÊÁéÃô¶ÈÅäÖÃ
     uint16_t actual_sens_rate1, actual_sens_rate2, actual_dec_rate2;
     if (SCH1_getRateSensDec(&actual_sens_rate1, &actual_sens_rate2, &actual_dec_rate2) == SCH1_OK)
     {
-        // ï¿½ï¿½ï¿½æµ½ï¿½ï¿½ï¿½Ô½á¹¹ï¿½ï¿½
+        // ±£´æµ½µ÷ÊÔ½á¹¹Ìå
         g_ahrs_debug.actual_sens_rate1 = actual_sens_rate1;
         g_ahrs_debug.actual_sens_rate2 = actual_sens_rate2;
         g_ahrs_debug.actual_dec_rate2 = actual_dec_rate2;
         g_ahrs_debug.config_sens_rate1 = SENSITIVITY_RATE1;
         g_ahrs_debug.expected_sensitivity = SENSITIVITY_RATE1 * (float)AVG_FACTOR;
         
-        printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rate1: %d LSB/dps, Rate2: %d LSB/dps, ï¿½ï¿½È¡ï¿½ï¿½: %d\r\n", 
+        printf("ÍÓÂÝÒÇÊµ¼ÊÅäÖÃ - ÁéÃô¶ÈRate1: %d LSB/dps, Rate2: %d LSB/dps, ³éÈ¡ÂÊ: %d\r\n", 
                actual_sens_rate1, actual_sens_rate2, actual_dec_rate2);
-        printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: %.0f LSB/dps\r\n", SENSITIVITY_RATE1);
-        printf("ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: %.0f (SENS * AVG_FACTOR)\r\n", g_ahrs_debug.expected_sensitivity);
+        printf("´úÂëÖÐÊ¹ÓÃµÄÁéÃô¶È: %.0f LSB/dps\r\n", SENSITIVITY_RATE1);
+        printf("ÆÚÍû×ª»»Òò×Ó: %.0f (SENS * AVG_FACTOR)\r\n", g_ahrs_debug.expected_sensitivity);
         
         if(actual_sens_rate1 != (uint16_t)SENSITIVITY_RATE1)
         {
-            printf("ï¿½ï¿½ï¿½æ£ºÊµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½Æ¥ï¿½ä£¡\r\n");
+            printf("¾¯¸æ£ºÊµ¼ÊÁéÃô¶ÈÓë´úÂëÅäÖÃ²»Æ¥Åä£¡\r\n");
         }
     }
     
-    // ï¿½ï¿½ï¿½ï¿½SPIÍ¨ï¿½ï¿½ï¿½È¶ï¿½ï¿½ï¿½
+    // ²âÊÔSPIÍ¨ÐÅÎÈ¶¨ÐÔ
     if (SCH1_testSPIStability())
     {
-        printf("SPIÍ¨ï¿½Å²ï¿½ï¿½ï¿½Í¨ï¿½ï¿½\r\n");
+        printf("SPIÍ¨ÐÅ²âÊÔÍ¨¹ý\r\n");
     }
     else
     {
-        printf("SPIÍ¨ï¿½Å²ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\r\n");
+        printf("SPIÍ¨ÐÅ²âÊÔÊ§°Ü£¬µ«¼ÌÐøÔËÐÐ\r\n");
     }
     
     ahrs_system.initialized = 1;
     
-    printf("AHRSï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½\r\n");
-    printf("ï¿½ï¿½ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«Ð£×¼ï¿½ï¿½ï¿½ë±£ï¿½ï¿½ï¿½è±¸ï¿½ï¿½Ö¹...\r\n");
+    printf("AHRS»¥²¹ÂË²¨Æ÷³õÊ¼»¯Íê³É\r\n");
+    printf("ÕýÔÚ½øÐÐÍÓÂÝÒÇÁãÆ«Ð£×¼£¬Çë±£³ÖÉè±¸¾²Ö¹...\r\n");
     
     return AHRS_STATUS_OK;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     AHRSÏµÍ³ï¿½ï¿½ï¿½Â£ï¿½ï¿½Ú¶ï¿½Ê±ï¿½Ð¶ï¿½ï¿½Ðµï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½1msï¿½ï¿½ï¿½Ú£ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     raw_data        ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Ê¼ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ï¿½ï¿½ï¿½ï¿½×´Ì¬
-// ï¿½ï¿½×¢ï¿½ï¿½Ï¢     Êµï¿½ï¿½AVG_FACTORï¿½Î²ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// º¯Êý¼ò½é     AHRSÏµÍ³¸üÐÂ£¨ÔÚ¶¨Ê±ÖÐ¶ÏÖÐµ÷ÓÃ£¬½¨Òé1msÖÜÆÚ£©
+// ²ÎÊýËµÃ÷     raw_data        ´«¸ÐÆ÷Ô­Ê¼Êý¾Ý
+// ·µ»Ø²ÎÊý     ¸üÐÂ×´Ì¬
+// ±¸×¢ÐÅÏ¢     ÊµÏÖAVG_FACTOR´Î²ÉÑùÆ½¾ù£¬¼õÉÙÔëÉù
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
 {
     if(!ahrs_system.initialized)
         return AHRS_STATUS_NOT_INIT;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½
+    // ¼ì²éÊý¾ÝÖ¡´íÎó
     if(raw_data->frame_error)
         return AHRS_STATUS_ERROR;
     
-    // ï¿½Û¼ï¿½Ô­Ê¼ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½Î²ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ë£©
+    // ÀÛ¼ÓÔ­Ê¼Êý¾Ý£¨ÓÃÓÚ¶à´Î²ÉÑùÆ½¾ù½µÔë£©
     raw_data_summed.Rate1_raw[AXIS_X] += raw_data->Rate1_raw[AXIS_X];
     raw_data_summed.Rate1_raw[AXIS_Y] += raw_data->Rate1_raw[AXIS_Y];
     raw_data_summed.Rate1_raw[AXIS_Z] += raw_data->Rate1_raw[AXIS_Z];
@@ -280,19 +282,19 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
     
     sample_count++;
     
-    // ï¿½ï¿½ï¿½Û¼Ó´ï¿½ï¿½ï¿½ï¿½ïµ½AVG_FACTORÊ±ï¿½ï¿½ï¿½Å½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½
+    // µ±ÀÛ¼Ó´ÎÊý´ïµ½AVG_FACTORÊ±£¬²Å½øÐÐÊý¾Ý×ª»»ºÍ×ËÌ¬¸üÐÂ
     if(sample_count >= AVG_FACTOR)
     {
-        // ×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SCH1_convert_dataï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½AVG_FACTORï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½
+        // ×ª»»ÎªÎïÀíÁ¿£¨SCH1_convert_data»á×Ô¶¯³ýÒÔAVG_FACTOR½øÐÐÆ½¾ù£©
         SCH1_result sensor_data;
         SCH1_convert_data(&raw_data_summed, &sensor_data);
         
-        // Ð£×¼ï¿½×¶ï¿½
+        // Ð£×¼½×¶Î
         if(!system_ready)
         {
             calibration_count++;
             
-            // ï¿½Û»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ã£¨ï¿½ï¿½401ï¿½ï¿½1400ï¿½ï¿½ï¿½ï¿½1000ï¿½Î£ï¿½
+            // ÀÛ»ýÍÓÂÝÒÇÊý¾ÝÓÃÓÚÁãÆ«¼ÆËã£¨´Ó401µ½1400£¬¹²1000´Î£©
             if(calibration_count > GYRO_CALIB_START && calibration_count <= GYRO_CALIB_END)
             {
                 gyro_sum_x += sensor_data.Rate1[AXIS_X];
@@ -300,70 +302,90 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
                 gyro_sum_z += sensor_data.Rate1[AXIS_Z];
             }
             
-            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«Æ½ï¿½ï¿½Öµ
+            // ¼ÆËãÁãÆ«Æ½¾ùÖµ
             if(calibration_count == GYRO_CALIB_FINISH)
             {
                 gyro_offset.x = gyro_sum_x / GYRO_CALIB_SAMPLES;
                 gyro_offset.y = gyro_sum_y / GYRO_CALIB_SAMPLES;
                 gyro_offset.z = gyro_sum_z / GYRO_CALIB_SAMPLES;
                 
-                printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«Ð£×¼ï¿½ï¿½ï¿½:\r\n");
-                printf("  Xï¿½ï¿½Æ«ï¿½ï¿½: %.6f dps\r\n", gyro_offset.x);
-                printf("  Yï¿½ï¿½Æ«ï¿½ï¿½: %.6f dps\r\n", gyro_offset.y);
-                printf("  Zï¿½ï¿½Æ«ï¿½ï¿½: %.6f dps\r\n", gyro_offset.z);
+                printf("ÍÓÂÝÒÇÁãÆ«Ð£×¼Íê³É:\r\n");
+                printf("  XÖáÆ«ÒÆ: %.6f dps\r\n", gyro_offset.x);
+                printf("  YÖáÆ«ÒÆ: %.6f dps\r\n", gyro_offset.y);
+                printf("  ZÖáÆ«ÒÆ: %.6f dps\r\n", gyro_offset.z);
             }
             
-            // ÏµÍ³×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+            // ÏµÍ³×¼±¸¾ÍÐ÷
             if(calibration_count > GYRO_READY_COUNT)
             {
                 system_ready = 1;
-                printf("AHRSÏµÍ³×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½\r\n");
+                
+                // ³õÊ¼»¯1D Yaw»ý·ÖÆ÷£º¶ÔÆëµ½ËÄÔªÊýËã³öµÄyaw
+                // ÔÚÐ£×¼½áÊøºó£¬ËÄÔªÊýÓ¦¸ÃÒÑ¾­ÓÐÁË³õÊ¼×ËÌ¬
+                yaw_gyro = euler_angles.yaw;
+                
+                printf("AHRSÏµÍ³×¼±¸¾ÍÐ÷£¬¿ªÊ¼×ËÌ¬½âËã\r\n");
+                printf("1D Yaw»ý·ÖÆ÷ÒÑ³õÊ¼»¯Îª: %.2f¶È\r\n", yaw_gyro);
             }
         }
         else
         {
-            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¶Î£ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬
+            // Õý³£¹¤×÷½×¶Î£º»ñÈ¡´«¸ÐÆ÷Êý¾Ý²¢¸üÐÂ×ËÌ¬
             ahrs_get_sensor_values(&sensor_data);
             
-            // ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+            // ========== 1D Yaw »ý·ÖÆ÷¸üÐÂ ==========
+            // imu_data.gyro_z ÒÑ¾­ÔÚ ahrs_get_sensor_values ÖÐ±»¸³Öµ£¨µ¥Î»£ºrad/s£©
+            // »ý·Öµ½¶È£ºgyro_z (rad/s) * (180/¦Ð) * dt
+            // ×¢Òâ£ºÊµ²â·¢ÏÖÐèÒª½« DELTA_T ³ËÒÔ 2£¬¿ÉÄÜÊÇÒòÎªÊµ¼Ê¸üÐÂÖÜÆÚÎª 4ms
+            yaw_gyro += imu_data.gyro_z * (180.0f / AHRS_PI) * DELTA_T * 2.0f;
+            
+            // ¹éÒ»»¯µ½ [-180, 180] ¶È
+            if (yaw_gyro > 180.0f)
+                yaw_gyro -= 360.0f;
+            else if (yaw_gyro < -180.0f)
+                yaw_gyro += 360.0f;
+            // ========================================
+            
+            // ¸üÐÂµ÷ÊÔÐÅÏ¢
             g_ahrs_debug.update_count++;
             
-            // ï¿½ï¿½Â¼Ô­Ê¼LSBï¿½ï¿½ï¿½ï¿½
+            // ¼ÇÂ¼Ô­Ê¼LSBÊý¾Ý
             g_ahrs_debug.raw_gyro_x = raw_data_summed.Rate1_raw[AXIS_X];
             g_ahrs_debug.raw_gyro_y = raw_data_summed.Rate1_raw[AXIS_Y];
             g_ahrs_debug.raw_gyro_z = raw_data_summed.Rate1_raw[AXIS_Z];
             
-            // ï¿½ï¿½Â¼×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(dps)
+            // ¼ÇÂ¼×ª»»ºóµÄÊý¾Ý(dps)
             g_ahrs_debug.gyro_x_dps = sensor_data.Rate1[AXIS_X];
             g_ahrs_debug.gyro_y_dps = sensor_data.Rate1[AXIS_Y];
             g_ahrs_debug.gyro_z_dps = sensor_data.Rate1[AXIS_Z];
             
-            // ï¿½ï¿½Â¼×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(rad/s)
+            // ¼ÇÂ¼×ª»»ºóµÄÊý¾Ý(rad/s)
             g_ahrs_debug.gyro_x_rads = imu_data.gyro_x;
             g_ahrs_debug.gyro_y_rads = imu_data.gyro_y;
             g_ahrs_debug.gyro_z_rads = imu_data.gyro_z;
             
-            // ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½LSBï¿½ï¿½dpsï¿½ï¿½
+            // ¼ÆËãÊµ¼Ê×ª»»Òò×Ó£¨´ÓLSBµ½dps£©
             if(g_ahrs_debug.gyro_z_dps != 0)
             {
                 g_ahrs_debug.actual_conversion_factor = (float)g_ahrs_debug.raw_gyro_z / g_ahrs_debug.gyro_z_dps;
             }
             
-            // Ö´ï¿½ï¿½AHRSï¿½ï¿½ï¿½ï¿½
+            // Ö´ÐÐAHRS¸üÐÂ
             ahrs_update_quaternion(imu_data.gyro_x, imu_data.gyro_y, imu_data.gyro_z,
                                   imu_data.acc_x, imu_data.acc_y, imu_data.acc_z);
             
-            // ×ªï¿½ï¿½ÎªÅ·ï¿½ï¿½ï¿½ï¿½
+            // ×ª»»ÎªÅ·À­½Ç
             ahrs_quaternion_to_euler();
             
-            // ï¿½ï¿½Â¼ï¿½ï¿½Ì¬ï¿½ï¿½
+            // ¼ÇÂ¼×ËÌ¬½Ç
             g_ahrs_debug.pitch_deg = euler_angles.pitch;
             g_ahrs_debug.roll_deg = euler_angles.roll;
             g_ahrs_debug.yaw_deg = euler_angles.yaw;
             g_ahrs_debug.yaw_accumulated_deg = euler_angles.yaw_accumulated;
+            g_ahrs_debug.yaw_gyro_deg = yaw_gyro;  // ¼ÇÂ¼1D Yaw»ý·ÖÆ÷µÄÖµ
         }
         
-        // ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û¼Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ÖØÖÃ²ÉÑù¼ÆÊýºÍÀÛ¼Ó»º³åÇø
         sample_count = 0;
         memset(&raw_data_summed, 0, sizeof(SCH1_raw_data));
     }
@@ -372,9 +394,9 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½È¡ï¿½ï¿½Ç°Å·ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     euler           Å·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ×´Ì¬
+// º¯Êý¼ò½é     »ñÈ¡µ±Ç°Å·À­½Ç
+// ²ÎÊýËµÃ÷     euler           Å·À­½ÇÊä³öÖ¸Õë
+// ·µ»Ø²ÎÊý     ×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_get_euler_angles(ahrs_euler_angles_t *euler)
 {
@@ -386,9 +408,9 @@ ahrs_status_enum ahrs_get_euler_angles(ahrs_euler_angles_t *euler)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½Ôªï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     quat            ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ×´Ì¬
+// º¯Êý¼ò½é     »ñÈ¡µ±Ç°ËÄÔªÊý
+// ²ÎÊýËµÃ÷     quat            ËÄÔªÊýÊä³öÖ¸Õë
+// ·µ»Ø²ÎÊý     ×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_get_quaternion(ahrs_quaternion_t *quat)
 {
@@ -400,9 +422,9 @@ ahrs_status_enum ahrs_get_quaternion(ahrs_quaternion_t *quat)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     offset          ï¿½ï¿½Æ«ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ×´Ì¬
+// º¯Êý¼ò½é     »ñÈ¡ÍÓÂÝÒÇÁãÆ«
+// ²ÎÊýËµÃ÷     offset          ÁãÆ«Êä³öÖ¸Õë
+// ·µ»Ø²ÎÊý     ×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_get_gyro_offset(ahrs_gyro_offset_t *offset)
 {
@@ -414,9 +436,9 @@ ahrs_status_enum ahrs_get_gyro_offset(ahrs_gyro_offset_t *offset)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ×´Ì¬
+// º¯Êý¼ò½é     ÖØÖÃº½Ïò½ÇÁãµã
+// ²ÎÊýËµÃ÷     ÎÞ
+// ·µ»Ø²ÎÊý     ×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_reset_yaw(void)
 {
@@ -424,41 +446,59 @@ ahrs_status_enum ahrs_reset_yaw(void)
     direction_change = 0;
     last_yaw = euler_angles.yaw;
     
-    printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\r\n");
+    // Í¬Ê±ÖØÖÃ1D Yaw»ý·ÖÆ÷
+    yaw_gyro = 0.0f;
+    
+    printf("º½Ïò½ÇÒÑÖØÖÃ£¨°üÀ¨1D Yaw»ý·ÖÆ÷£©\r\n");
     return AHRS_STATUS_OK;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½ï¿½ï¿½PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     kp              ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-//             ki              ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ×´Ì¬
+// º¯Êý¼ò½é     »ñÈ¡´¿ÍÓÂÝ»ý·ÖµÄº½Ïò½Ç£¨1D Yaw»ý·ÖÆ÷£©
+// ²ÎÊýËµÃ÷     yaw_deg         º½Ïò½ÇÊä³öÖ¸Õë£¨¶È£©
+// ·µ»Ø²ÎÊý     ×´Ì¬
+// ±¸×¢ÐÅÏ¢     ´Ëº½Ïò½Ç½öÓÉÍÓÂÝÒÇZÖá»ý·ÖµÃµ½£¬ÓÃÓÚÆ½Ãæµ¼º½ºÍ×ªÏò¿ØÖÆ
+//-------------------------------------------------------------------------------------------------------------------
+ahrs_status_enum ahrs_get_yaw_gyro(float *yaw_deg)
+{
+    if(!system_ready || yaw_deg == NULL)
+        return AHRS_STATUS_ERROR;
+    
+    *yaw_deg = yaw_gyro;
+    return AHRS_STATUS_OK;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// º¯Êý¼ò½é     ÉèÖÃPI¿ØÖÆÆ÷²ÎÊý
+// ²ÎÊýËµÃ÷     kp              ±ÈÀýÔöÒæ
+//             ki              »ý·ÖÔöÒæ
+// ·µ»Ø²ÎÊý     ×´Ì¬
 //-------------------------------------------------------------------------------------------------------------------
 ahrs_status_enum ahrs_set_pi_params(float kp, float ki)
 {
     param_kp = kp;
     param_ki = ki;
     
-    printf("PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¸ï¿½ï¿½ï¿½: Kp=%.3f, Ki=%.3f\r\n", kp, ki);
+    printf("PI¿ØÖÆÆ÷²ÎÊýÒÑ¸üÐÂ: Kp=%.3f, Ki=%.3f\r\n", kp, ki);
     return AHRS_STATUS_OK;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½ï¿½ÏµÍ³ï¿½Ç·ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     1-ï¿½ï¿½ï¿½ï¿½ 0-Î´ï¿½ï¿½ï¿½ï¿½
+// º¯Êý¼ò½é     ¼ì²éÏµÍ³ÊÇ·ñ×¼±¸¾ÍÐ÷
+// ²ÎÊýËµÃ÷     ÎÞ
+// ·µ»Ø²ÎÊý     1-¾ÍÐ÷ 0-Î´¾ÍÐ÷
 //-------------------------------------------------------------------------------------------------------------------
 uint8 ahrs_is_ready(void)
 {
     return system_ready;
 }
 
-//=================================================ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½================================================
+//=================================================ÄÚ²¿º¯ÊýÊµÏÖ================================================
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½Quake IIIï¿½ã·¨ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     x               ï¿½ï¿½ï¿½ï¿½Öµ
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     1/sqrt(x)
+// º¯Êý¼ò½é     ¿ìËÙÆ½·½¸ùµ¹ÊýËã·¨£¨Quake IIIËã·¨£©
+// ²ÎÊýËµÃ÷     x               ÊäÈëÖµ
+// ·µ»Ø²ÎÊý     1/sqrt(x)
 //-------------------------------------------------------------------------------------------------------------------
 static float fast_inv_sqrt(float x)
 {
@@ -472,13 +512,13 @@ static float fast_inv_sqrt(float x)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     sensor_data     Ô­Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ï¿½ï¿½
+// º¯Êý¼ò½é     »ñÈ¡²¢´¦Àí´«¸ÐÆ÷Êý¾Ý
+// ²ÎÊýËµÃ÷     sensor_data     Ô­Ê¼´«¸ÐÆ÷Êý¾Ý
+// ·µ»Ø²ÎÊý     ÎÞ
 //-------------------------------------------------------------------------------------------------------------------
 static void ahrs_get_sensor_values(SCH1_result *sensor_data)
 {
-    // ï¿½ï¿½ï¿½Ù¶È¼ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½Ë²ï¿½ + ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½
+    // ¼ÓËÙ¶È¼ÆÊý¾Ý´¦Àí£¨µÍÍ¨ÂË²¨ + µ¥Î»×ª»»£©
     imu_data.acc_x = ALPHA * (sensor_data->Acc1[AXIS_X] / G_TO_M_S2) + 
                      (1.0f - ALPHA) * imu_data.acc_x;
     imu_data.acc_y = ALPHA * (sensor_data->Acc1[AXIS_Y] / G_TO_M_S2) + 
@@ -486,17 +526,17 @@ static void ahrs_get_sensor_values(SCH1_result *sensor_data)
     imu_data.acc_z = ALPHA * (sensor_data->Acc1[AXIS_Z] / G_TO_M_S2) + 
                      (1.0f - ALPHA) * imu_data.acc_z;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ÍÓÂÝÒÇÊý¾Ý´¦Àí£¨ÁãÆ«²¹³¥£©
     imu_data.gyro_x = (sensor_data->Rate1[AXIS_X] - gyro_offset.x) * DEG_TO_RAD;
     imu_data.gyro_y = (sensor_data->Rate1[AXIS_Y] - gyro_offset.y) * DEG_TO_RAD;
     imu_data.gyro_z = (sensor_data->Rate1[AXIS_Z] - gyro_offset.z) * DEG_TO_RAD;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     AHRSï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½Â£ï¿½ï¿½ï¿½PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¯ï¿½Æ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¾ï¿½Ô½ï¿½ï¿½Ô½Æ®ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     gx, gy, gz      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (rad/s)
-//             ax, ay, az      ï¿½ï¿½ï¿½Ù¶È¼ï¿½ï¿½ï¿½ï¿½ï¿½ (g)
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ï¿½ï¿½
+// º¯Êý¼ò½é     AHRSËÄÔªÊý¸üÐÂ£¨º¬PI¿ØÖÆÆ÷Æ¯ÒÆ²¹³¥£¬µ«¸Ð¾õÔ½²»Ô½Æ®£¬ÆúÓÃ£©
+// ²ÎÊýËµÃ÷     gx, gy, gz      ÍÓÂÝÒÇÊý¾Ý (rad/s)
+//             ax, ay, az      ¼ÓËÙ¶È¼ÆÊý¾Ý (g)
+// ·µ»Ø²ÎÊý     ÎÞ
 //-------------------------------------------------------------------------------------------------------------------
 static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float ay, float az)
 {
@@ -504,13 +544,13 @@ static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float
     float vx, vy, vz;
     float ex, ey, ez;
     
-    // ï¿½ï¿½Ç°ï¿½ï¿½Ôªï¿½ï¿½Öµ
+    // µ±Ç°ËÄÔªÊýÖµ
     float q0 = quaternion.q0;
     float q1 = quaternion.q1;
     float q2 = quaternion.q2;
     float q3 = quaternion.q3;
     
-    // Ô¤ï¿½ï¿½ï¿½ã³£ï¿½ï¿½ï¿½ï¿½
+    // Ô¤¼ÆËã³£ÓÃÏî
     float q0q0 = q0 * q0;
     float q0q1 = q0 * q1;
     float q0q2 = q0 * q2;
@@ -520,39 +560,39 @@ static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float
     float q2q3 = q2 * q3;
     float q3q3 = q3 * q3;
     
-    // ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶È¼ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¹éÒ»»¯¼ÓËÙ¶È¼ÆÊý¾Ý
     float norm = fast_inv_sqrt(ax * ax + ay * ay + az * az);
     ax = ax * norm;
     ay = ay * norm;
     az = az * norm;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò£¨´ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ã£©
+    // ¹À¼ÆÖØÁ¦·½Ïò£¨´ÓËÄÔªÊý¼ÆËã£©
     vx = 2.0f * (q1q3 - q0q2);
     vy = 2.0f * (q0q1 + q2q3);
     vz = q0q0 - q1q1 - q2q2 + q3q3;
     
-    // ï¿½ï¿½î£ºï¿½ï¿½ï¿½Ù¶È¼Æ²ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½Ä²ï¿½ï¿½
+    // Îó²î£º¼ÓËÙ¶È¼Æ²âÁ¿ÖµÓë¹À¼ÆÖµµÄ²æ»ý
     ex = ay * vz - az * vy;
     ey = az * vx - ax * vz;
     ez = ax * vy - ay * vx;
     
-    // PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // PI¿ØÖÆÆ÷»ý·ÖÎó²î
     pi_controller.integral_ex += half_t * ex;
     pi_controller.integral_ey += half_t * ey;
     pi_controller.integral_ez += half_t * ez;
     
-    // Ó¦ï¿½ï¿½PIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¯ï¿½ï¿½
+    // Ó¦ÓÃPI¿ØÖÆÆ÷²¹³¥ÍÓÂÝÒÇÆ¯ÒÆ
     gx = gx + param_kp * ex + param_ki * pi_controller.integral_ex;
     gy = gy + param_kp * ey + param_ki * pi_controller.integral_ey;
     gz = gz + param_kp * ez + param_ki * pi_controller.integral_ez;
     
-    // ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½×¸ï¿½ï¿½ï¿½
+    // ËÄÔªÊýÒ»½×¸üÐÂ
     q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * half_t;
     q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * half_t;
     q2 = q2 + (q0 * gy - q1 * gz + q3 * gx) * half_t;
     q3 = q3 + (q0 * gz + q1 * gy - q2 * gx) * half_t;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¶þ½×ÐÞÕý
     float delta_2 = (2.0f * half_t * gx) * (2.0f * half_t * gx) +
                     (2.0f * half_t * gy) * (2.0f * half_t * gy) +
                     (2.0f * half_t * gz) * (2.0f * half_t * gz);
@@ -562,7 +602,7 @@ static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float
     q2 = (1.0f - delta_2 / 8.0f) * q2 + (q0 * gy - q1 * gz + q3 * gx) * half_t;
     q3 = (1.0f - delta_2 / 8.0f) * q3 + (q0 * gz + q1 * gy - q2 * gx) * half_t;
     
-    // ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
+    // ËÄÔªÊý¹éÒ»»¯
     norm = fast_inv_sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
     quaternion.q0 = q0 * norm;
     quaternion.q1 = q1 * norm;
@@ -571,9 +611,9 @@ static void ahrs_update_quaternion(float gx, float gy, float gz, float ax, float
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½     ï¿½ï¿½Ôªï¿½ï¿½×ªÅ·ï¿½ï¿½ï¿½Ç£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-// ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½     ï¿½ï¿½
-// ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½     ï¿½ï¿½
+// º¯Êý¼ò½é     ËÄÔªÊý×ªÅ·À­½Ç£¨º¬º½Ïò½ÇÀÛ»ý´¦Àí£©
+// ²ÎÊýËµÃ÷     ÎÞ
+// ·µ»Ø²ÎÊý     ÎÞ
 //-------------------------------------------------------------------------------------------------------------------
 static void ahrs_quaternion_to_euler(void)
 {
@@ -582,30 +622,30 @@ static void ahrs_quaternion_to_euler(void)
     float q2 = quaternion.q2;
     float q3 = quaternion.q3;
     
-    // ï¿½ï¿½ï¿½ã¸©ï¿½ï¿½ï¿½ï¿½ (Pitch)
+    // ¼ÆËã¸©Ñö½Ç (Pitch)
     euler_angles.pitch = asin(-2.0f * q1 * q3 + 2.0f * q0 * q2) * 180.0f / AHRS_PI;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ (Roll)
+    // ¼ÆËã¹ö×ª½Ç (Roll)
     euler_angles.roll = atan2(2.0f * q2 * q3 + 2.0f * q0 * q1, 
                               -2.0f * q1 * q1 - 2.0f * q2 * q2 + 1.0f) * 180.0f / AHRS_PI;
     
-    // ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ (Yaw)
+    // ¼ÆËãÆ«º½½Ç (Yaw)
     euler_angles.yaw = atan2(2.0f * q1 * q2 + 2.0f * q0 * q3, 
                              -2.0f * q2 * q2 - 2.0f * q3 * q3 + 1.0f) * 180.0f / AHRS_PI;
     
-    // ï¿½Ç¶È·ï¿½Î§ï¿½ï¿½ï¿½Æµï¿½ [-180, 180]
+    // ½Ç¶È·¶Î§ÏÞÖÆµ½ [-180, 180]
     if(euler_angles.yaw >= 180.0f)
         euler_angles.yaw -= 360.0f;
     else if(euler_angles.yaw <= -180.0f)
         euler_angles.yaw += 360.0f;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½180ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // º½Ïò½ÇÀÛ»ý´¦Àí£¨´¦Àí¿çÔ½¡À180¡ãµÄÇé¿ö£©
     if((euler_angles.yaw - last_yaw) < -350.0f)
         direction_change++;
     else if((euler_angles.yaw - last_yaw) > 350.0f)
         direction_change--;
     
-    // ï¿½ï¿½ï¿½ï¿½ï¿½Û»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ¼ÆËãÀÛ»ýº½Ïò½Ç
     euler_angles.yaw_accumulated = -(360.0f * direction_change + euler_angles.yaw - yaw_offset);
     
     last_yaw = euler_angles.yaw;

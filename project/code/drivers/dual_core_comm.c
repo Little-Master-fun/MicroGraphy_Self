@@ -56,11 +56,15 @@ void dual_core_update_sensor_data(void)
 {
     core0_timestamp++;
     
-    // 读取AHRS姿态数据
+    // 读取1D Yaw积分器的航向角（用于平面导航）
+    float yaw_gyro_deg;
+    ahrs_get_yaw_gyro(&yaw_gyro_deg);
+    shared_core0_data.yaw = yaw_gyro_deg;
+    
+    // 读取AHRS姿态数据（四元数欧拉角，可用于调试或俯仰补偿）
     ahrs_euler_angles_t euler;
     ahrs_get_euler_angles(&euler);
     
-    shared_core0_data.yaw = euler.yaw;
     shared_core0_data.pitch = euler.pitch;
     shared_core0_data.roll = euler.roll;
     

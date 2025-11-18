@@ -1,160 +1,160 @@
 /*********************************************************************************************************************
-* ÎÄ¼şÃû³Æ          driver_sch16tk10.c
-* ¹¦ÄÜËµÃ÷          SCH16TK10¸ß¾«¶ÈIMU´«¸ĞÆ÷Çı¶¯³ÌĞòÊµÏÖÎÄ¼ş
-* ×÷Õß              LittleMaster
-* °æ±¾ĞÅÏ¢          v1.0
-* ĞŞ¸Ä¼ÇÂ¼
-* ÈÕÆÚ              ×÷Õß                °æ±¾
+* ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½          driver_sch16tk10.c
+* ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½          SCH16TK10ï¿½ß¾ï¿½ï¿½ï¿½IMUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ä¼ï¿½
+* ï¿½ï¿½ï¿½ï¿½              LittleMaster
+* ï¿½æ±¾ï¿½ï¿½Ï¢          v1.0
+* ï¿½Ş¸Ä¼ï¿½Â¼
+* ï¿½ï¿½ï¿½ï¿½              ï¿½ï¿½ï¿½ï¿½                ï¿½æ±¾
 * 2025-09-17        LittleMaster       1.0v
 * 
-* ÎÄ¼ş×÷ÓÃËµÃ÷£º
-* ±¾ÎÄ¼şÊÇMurata SCH1600ÏµÁĞ¸ß¾«¶ÈIMU´«¸ĞÆ÷µÄÇı¶¯³ÌĞòÊµÏÖ
-* Ìá¹©ÍêÕûµÄ´«¸ĞÆ÷¿ØÖÆ¡¢Êı¾İ¶ÁÈ¡¡¢ÅäÖÃ¹ÜÀíºÍÕï¶Ï¹¦ÄÜ
+* ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½
+* ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Murata SCH1600Ïµï¿½Ğ¸ß¾ï¿½ï¿½ï¿½IMUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
+* ï¿½á¹©ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¡ï¿½ï¿½ï¿½ï¿½İ¶ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¹ï¿½ï¿½ï¿½
 * 
-* Ê¹ÓÃ×¢ÒâÊÂÏî£º
-* 1. È·±£SPIÊ±ĞòÂú×ã´«¸ĞÆ÷ÒªÇó
-* 2. ³õÊ¼»¯Ç°¼ì²éÓ²¼şÁ¬½Ó
-* 3. ¸ù¾İÓ¦ÓÃĞèÇóÅäÖÃÂË²¨Æ÷ºÍÁéÃô¶È
-* 4. ¶¨ÆÚ¼ì²é´«¸ĞÆ÷×´Ì¬
-* 5. ÔÚ¹Ø¼üÓ¦ÓÃÖĞÆôÓÃÍ¨ĞÅ¼à¿Ø
+* Ê¹ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½ï¿½î£º
+* 1. È·ï¿½ï¿½SPIÊ±ï¿½ï¿½ï¿½ï¿½ï¿½ã´«ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½
+* 2. ï¿½ï¿½Ê¼ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+* 3. ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+* 4. ï¿½ï¿½ï¿½Ú¼ï¿½é´«ï¿½ï¿½ï¿½ï¿½×´Ì¬
+* 5. ï¿½Ú¹Ø¼ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½Å¼ï¿½ï¿½
 ********************************************************************************************************************/
 
 #include "driver_sch16tk10.h"
 #include "zf_common_headfile.h"
 
-// Ó²¼şÒı½Å¶¨Òå / Hardware pin definitions (¸ù¾İÔ­ÀíÍ¼ U42)
-// ×¢Òâ£ºÔ­ÀíÍ¼P07.xÒı½ÅÎŞ·¨ÓÃÓ²¼şSPI£¬Ê¹ÓÃÈí¼şSPI
-#define EXTRESN_PORT    P07_4               // ¸´Î»Òı½Å / Reset pin EXTRESN (Òı½Å44)
-#define SPI_CS_PIN      P07_3               // GPIO·½Ê½µÄÆ¬Ñ¡Òı½Å / CS pin as GPIO (Òı½Å43)
-#define SOFT_SPI_SCK    P07_2               // Èí¼şSPIÊ±ÖÓÒı½Å / Software SPI SCK pin (Òı½Å42)
-#define SOFT_SPI_MOSI   P07_1               // Èí¼şSPI MOSIÒı½Å / Software SPI MOSI pin (Òı½Å41)
-#define SOFT_SPI_MISO   P07_0               // Èí¼şSPI MISOÒı½Å / Software SPI MISO pin (Òı½Å40)
-#define GPIO_RESET      (P07_4)             // ±¸ÓÃ¸´Î»Òı½Å / Alternative reset pin
+// Ó²ï¿½ï¿½ï¿½ï¿½ï¿½Å¶ï¿½ï¿½ï¿½ / Hardware pin definitions (ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½Í¼ U42)
+// ×¢ï¿½â£ºÔ­ï¿½ï¿½Í¼P07.xï¿½ï¿½ï¿½ï¿½ï¿½Ş·ï¿½ï¿½ï¿½Ó²ï¿½ï¿½SPIï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SPI
+#define EXTRESN_PORT    P07_4               // ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ / Reset pin EXTRESN (ï¿½ï¿½ï¿½ï¿½44)
+#define SPI_CS_PIN      P07_3               // GPIOï¿½ï¿½Ê½ï¿½ï¿½Æ¬Ñ¡ï¿½ï¿½ï¿½ï¿½ / CS pin as GPIO (ï¿½ï¿½ï¿½ï¿½43)
+#define SOFT_SPI_SCK    P07_2               // ï¿½ï¿½ï¿½ï¿½SPIÊ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / Software SPI SCK pin (ï¿½ï¿½ï¿½ï¿½42)
+#define SOFT_SPI_MOSI   P07_1               // ï¿½ï¿½ï¿½ï¿½SPI MOSIï¿½ï¿½ï¿½ï¿½ / Software SPI MOSI pin (ï¿½ï¿½ï¿½ï¿½41)
+#define SOFT_SPI_MISO   P07_0               // ï¿½ï¿½ï¿½ï¿½SPI MISOï¿½ï¿½ï¿½ï¿½ / Software SPI MISO pin (ï¿½ï¿½ï¿½ï¿½40)
+#define GPIO_RESET      (P07_4)             // ï¿½ï¿½ï¿½Ã¸ï¿½Î»ï¿½ï¿½ï¿½ï¿½ / Alternative reset pin
 
-// Èí¼şSPI½á¹¹Ìå
+// ï¿½ï¿½ï¿½ï¿½SPIï¿½á¹¹ï¿½ï¿½
 static soft_spi_info_struct sch16_spi;
 
-// Íâ²¿º¯ÊıÉùÃ÷£¨¿âµÄÍ·ÎÄ¼şÉùÃ÷ÓëÊµÏÖ²»Ò»ÖÂ£¬ÊÖ¶¯ÉùÃ÷Êµ¼Êº¯Êı£©
-// ×¢Òâ£ºÊµ¼ÊÊµÏÖµÄº¯ÊıÃûÊÇ soft_spi_16bit_transfer£¬¶øÍ·ÎÄ¼şÖĞÉùÃ÷µÄÊÇ soft_spi_transfer_16bit
+// ï¿½â²¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö²ï¿½Ò»ï¿½Â£ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Êºï¿½ï¿½ï¿½ï¿½ï¿½
+// ×¢ï¿½â£ºÊµï¿½ï¿½Êµï¿½ÖµÄºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ soft_spi_16bit_transferï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ soft_spi_transfer_16bit
 extern void soft_spi_16bit_transfer(soft_spi_info_struct *soft_spi_obj, const uint16 *write_buffer, uint16 *read_buffer, uint32 len);
 
-// ¾²Ì¬±äÁ¿¶¨Òå / Static variable definitions
-static pit_index_enum sampling_timer = PIT_CH0;  // ²ÉÑù¶¨Ê±Æ÷Í¨µÀ / Sampling timer channel
+// ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / Static variable definitions
+static pit_index_enum sampling_timer = PIT_CH0;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Í¨ï¿½ï¿½ / Sampling timer channel
 
-// ¾²Ì¬º¯ÊıÉùÃ÷ / Static function declarations
-static void GPIO_init(void);               // GPIO³õÊ¼»¯º¯Êı / GPIO initialization function
-static void SPI_Init(void);                // SPI³õÊ¼»¯º¯Êı / SPI initialization function
-static uint8_t CRC8(uint64_t SPIframe);    // ¼ÆËã8Î»CRCĞ£Ñé / Calculate 8-bit CRC
-static uint8_t CRC3(uint32_t SPIframe);    // ¼ÆËã3Î»CRCĞ£Ñé / Calculate 3-bit CRC
+// ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / Static function declarations
+static void GPIO_init(void);               // GPIOï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / GPIO initialization function
+static void SPI_Init(void);                // SPIï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / SPI initialization function
+static uint8_t CRC8(uint64_t SPIframe);    // ï¿½ï¿½ï¿½ï¿½8Î»CRCĞ£ï¿½ï¿½ / Calculate 8-bit CRC
+static uint8_t CRC3(uint32_t SPIframe);    // ï¿½ï¿½ï¿½ï¿½3Î»CRCĞ£ï¿½ï¿½ / Calculate 3-bit CRC
 
 // ================================
-// Ó²¼ş³éÏó²ãº¯ÊıÊµÏÖ / Hardware abstraction layer functions
+// Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ãº¯ï¿½ï¿½Êµï¿½ï¿½ / Hardware abstraction layer functions
 // ================================
 
 /**
- * @brief  GPIOÒı½Å³õÊ¼»¯ / GPIO pins initialization
+ * @brief  GPIOï¿½ï¿½ï¿½Å³ï¿½Ê¼ï¿½ï¿½ / GPIO pins initialization
  */
 static void GPIO_init(void) {
-    // ³õÊ¼»¯Íâ²¿¸´Î»Òı½Å£¬ÍÆÍìÊä³ö£¬Ä¬ÈÏ¸ßµçÆ½
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½â²¿ï¿½ï¿½Î»ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¸ßµï¿½Æ½
     // Initialize external reset pin, push-pull output, default high level
     gpio_init(EXTRESN_PORT, GPO, GPIO_HIGH, GPO_PUSH_PULL);
     
-    // ³õÊ¼»¯SPIÆ¬Ñ¡Òı½Å£¬ÍÆÍìÊä³ö£¬Ä¬ÈÏ¸ßµçÆ½£¨Î´Ñ¡ÖĞ×´Ì¬£©
+    // ï¿½ï¿½Ê¼ï¿½ï¿½SPIÆ¬Ñ¡ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¸ßµï¿½Æ½ï¿½ï¿½Î´Ñ¡ï¿½ï¿½×´Ì¬ï¿½ï¿½
     // Initialize SPI chip select pin, push-pull output, default high level (deselected state)
     gpio_init(SPI_CS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
 }
 
 /**
- * @brief  SPIÍâÉè³õÊ¼»¯ / SPI peripheral initialization (Ê¹ÓÃÈí¼şSPI)
+ * @brief  SPIï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ / SPI peripheral initialization (Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SPI)
  */
 static void SPI_Init(void) {
-    // Ê¹ÓÃÈí¼şSPI£¬ÒòÎªP07.x²»Ö§³ÖÓ²¼şSPI :=(
+    // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SPIï¿½ï¿½ï¿½ï¿½ÎªP07.xï¿½ï¿½Ö§ï¿½ï¿½Ó²ï¿½ï¿½SPI :=(
     soft_spi_init(&sch16_spi, 0, 1, SOFT_SPI_SCK, SOFT_SPI_MOSI, SOFT_SPI_MISO, SOFT_SPI_PIN_NULL);
 }
 
 /**
- * @brief  Ó²¼ş³õÊ¼»¯ / Hardware initialization
+ * @brief  Ó²ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ / Hardware initialization
  */
 void hw_init(void) {
-    GPIO_init();            // IOÒı½Å³õÊ¼»¯ / IO-pin initializations
-    SPI_Init();             // SCH1600µÄSPIÍ¨µÀ³õÊ¼»¯ / SPI channel for SCH1600
-    system_delay_ms(100);   // µÈ´ı100msÈÃÓ²¼şÎÈ¶¨ / Wait 100ms for hardware stabilization
+    GPIO_init();            // IOï¿½ï¿½ï¿½Å³ï¿½Ê¼ï¿½ï¿½ / IO-pin initializations
+    SPI_Init();             // SCH1600ï¿½ï¿½SPIÍ¨ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ / SPI channel for SCH1600
+    system_delay_ms(100);   // ï¿½È´ï¿½100msï¿½ï¿½Ó²ï¿½ï¿½ï¿½È¶ï¿½ / Wait 100ms for hardware stabilization
 }
 
 /**
- * @brief  ½«Íâ²¿¸´Î»Òı½ÅÀ­¸ß / Set external reset pin to high level
+ * @brief  ï¿½ï¿½ï¿½â²¿ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / Set external reset pin to high level
  */
 void hw_EXTRESN_High(void) {
     gpio_set_level(EXTRESN_PORT, GPIO_HIGH);
 }
 
 /**
- * @brief  ½«Íâ²¿¸´Î»Òı½ÅÀ­µÍ / Set external reset pin to low level
+ * @brief  ï¿½ï¿½ï¿½â²¿ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ / Set external reset pin to low level
  */
 void hw_EXTRESN_Low(void) {
     gpio_set_level(EXTRESN_PORT, GPIO_LOW);
 }
 
 /**
- * @brief  ½«SPIÆ¬Ñ¡Òı½ÅÀ­¸ß£¨È¡ÏûÑ¡ÖĞ£© / Set SPI chip select pin to high level (deselect)
+ * @brief  ï¿½ï¿½SPIÆ¬Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß£ï¿½È¡ï¿½ï¿½Ñ¡ï¿½Ğ£ï¿½ / Set SPI chip select pin to high level (deselect)
  */
 void hw_CS_High(void) {
     gpio_set_level(SPI_CS_PIN, GPIO_HIGH);
 }
 
 /**
- * @brief  ½«SPIÆ¬Ñ¡Òı½ÅÀ­µÍ£¨Ñ¡ÖĞ£© / Set SPI chip select pin to low level (select)
+ * @brief  ï¿½ï¿½SPIÆ¬Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½Ñ¡ï¿½Ğ£ï¿½ / Set SPI chip select pin to low level (select)
  */
 void hw_CS_Low(void) {
     gpio_set_level(SPI_CS_PIN, GPIO_LOW);
 }
 
 /**
- * @brief  ºÁÃëÑÓÊ±º¯Êı / Millisecond delay function
+ * @brief  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ / Millisecond delay function
  */
 void hw_delay(uint32_t ms) {
     system_delay_ms(ms);
 }
 
 /**
- * @brief  ÉèÖÃ¶¨Ê±Æ÷ÆµÂÊ / Set timer frequency
+ * @brief  ï¿½ï¿½ï¿½Ã¶ï¿½Ê±ï¿½ï¿½Æµï¿½ï¿½ / Set timer frequency
  */
 void hw_timer_setFreq(uint32_t freq) {
-    uint32_t period_us = 1000000 / freq;  // ¼ÆËãÖÜÆÚ£¨Î¢Ãë£© / Calculate period in microseconds
-    pit_us_init(sampling_timer, period_us);  // ³õÊ¼»¯PIT¶¨Ê±Æ÷ / Initialize PIT timer
+    uint32_t period_us = 1000000 / freq;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½Î¢ï¿½ë£© / Calculate period in microseconds
+    pit_us_init(sampling_timer, period_us);  // ï¿½ï¿½Ê¼ï¿½ï¿½PITï¿½ï¿½Ê±ï¿½ï¿½ / Initialize PIT timer
 }
 
 /**
- * @brief  Í£Ö¹¶¨Ê±Æ÷ÖĞ¶Ï / Stop timer interrupt
+ * @brief  Í£Ö¹ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ğ¶ï¿½ / Stop timer interrupt
  */
 void hw_timer_stopIT(void) {
-    pit_disable(sampling_timer);  // ½ûÓÃPIT¶¨Ê±Æ÷ / Disable PIT timer
+    pit_disable(sampling_timer);  // ï¿½ï¿½ï¿½ï¿½PITï¿½ï¿½Ê±ï¿½ï¿½ / Disable PIT timer
 }
 
 /**
- * @brief  Æô¶¯¶¨Ê±Æ÷ÖĞ¶Ï / Start timer interrupt
+ * @brief  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ğ¶ï¿½ / Start timer interrupt
  */
 void hw_timer_startIT(void) {
-    pit_enable(sampling_timer);   // Ê¹ÄÜPIT¶¨Ê±Æ÷ / Enable PIT timer
+    pit_enable(sampling_timer);   // Ê¹ï¿½ï¿½PITï¿½ï¿½Ê±ï¿½ï¿½ / Enable PIT timer
 }
 
 /**
- * @brief  ·¢ËÍ48Î»SPIÇëÇó²¢½ÓÊÕÏìÓ¦ / Send 48-bit SPI request and receive response
+ * @brief  ï¿½ï¿½ï¿½ï¿½48Î»SPIï¿½ï¿½ï¿½ó²¢½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ / Send 48-bit SPI request and receive response
  */
 
 
 // ================================
-// ´«¸ĞÆ÷Çı¶¯º¯ÊıÊµÏÖ / Sensor driver functions
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ / Sensor driver functions
 // ================================
 
 /**
- * @brief  ¸´Î»SCH1´«¸ĞÆ÷£¨Ó²¼ş¸´Î»£© / Reset SCH1 sensor (hardware reset)
+ * @brief  ï¿½ï¿½Î»SCH1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ / Reset SCH1 sensor (hardware reset)
  */
 void SCH1_reset(void)
 {              
-    hw_EXTRESN_Low();           // À­µÍ¸´Î»ĞÅºÅ / Pull reset signal low
-    hw_delay(2);                // ÑÓÊ±2ms / Delay 2ms
-    hw_EXTRESN_High();          // À­¸ß¸´Î»ĞÅºÅ / Pull reset signal high
+    hw_EXTRESN_Low();           // ï¿½ï¿½ï¿½Í¸ï¿½Î»ï¿½Åºï¿½ / Pull reset signal low
+    hw_delay(2);                // ï¿½ï¿½Ê±2ms / Delay 2ms
+    hw_EXTRESN_High();          // ï¿½ï¿½ï¿½ß¸ï¿½Î»ï¿½Åºï¿½ / Pull reset signal high
 }
 
 void SCH1_sendSPIreset(void)
@@ -176,7 +176,7 @@ bool SCH1_isValidFilterFreq(uint32_t Freq)
 
 bool SCH1_isValidRateSens(uint32_t Sens)
 {   
-    if (Sens == 1600 || Sens == 3200 || Sens == 6400) 
+    if (Sens == 100 || Sens == 200 || Sens == 400) 
         return true;
     else    
         return false;
@@ -634,35 +634,31 @@ uint32_t SCH1_convertRateSensToBitfield(uint32_t Sens)
 {
     switch (Sens)
     {
-        case 1600:
+        case 100:
             return 0x02;   // 010
-        case 3200:
-            return 0x03;   // 011      
-        case 6400:
+        case 200:
+            return 0x03;   // 011
+        case 400:
             return 0x04;   // 100
         default:
-            return 0x01;       
+            return 0x01;
     }
 }
-
 
 uint32_t SCH1_convertBitfieldToRateSens(uint32_t bitfield)
 {
     switch (bitfield)
     {
         case 0x02:          // 010
-            return 1600;
+            return 100;
         case 0x03:          // 011
-            return 3200;      
+            return 200;
         case 0x04:          // 100
-            return 6400;
+            return 400;
         default:
-            return 0x00;       
+            return 0x00;
     }
 }
-
-
-
 uint32_t SCH1_convertAccSensToBitfield(uint32_t Sens)
 {
     switch (Sens)
@@ -769,20 +765,20 @@ bool SCH1_verifyStatus(SCH1_status *Status)
         return false;
     }
 
-    // æ£€æŸ¥å…³é”?çŠ¶æ€ä½ï¼Œè€Œä¸æ˜?è¦æ±‚æ‰€æœ‰å¯„å­˜å™¨éƒ½æ˜¯0xffff
-    // æ£€æŸ?Summaryå¯„å­˜å™¨ä¸­çš„å…³é”?ä½?
-    if (!(Status->Summary & S_SUM_INIT_RDY))  // æ£€æŸ¥åˆå§‹åŒ–å°±ç»ªä½?
+    // æ£€æŸ¥å…³ï¿½?çŠ¶æ€ä½ï¼Œè€Œä¸ï¿½?è¦æ±‚æ‰€æœ‰å¯„å­˜å™¨éƒ½æ˜¯0xffff
+    // æ£€ï¿½?Summaryå¯„å­˜å™¨ä¸­çš„å…³ï¿½?ï¿½?
+    if (!(Status->Summary & S_SUM_INIT_RDY))  // æ£€æŸ¥åˆå§‹åŒ–å°±ç»ªï¿½?
         return false;
     
-    // æ£€æŸ?CommonçŠ¶æ€å¯„å­˜å™¨ä¸?çš„å…³é”?ä½?
-    if (!(Status->Common & S_COM_CMN_STS_RDY))  // æ£€æŸ¥é€šç”¨çŠ¶æ€å°±ç»?ä½?
+    // æ£€ï¿½?CommonçŠ¶æ€å¯„å­˜å™¨ï¿½?çš„å…³ï¿½?ï¿½?
+    if (!(Status->Common & S_COM_CMN_STS_RDY))  // æ£€æŸ¥é€šç”¨çŠ¶æ€å°±ï¿½?ï¿½?
         return false;
     
-    // æ£€æŸ?Rate CommonçŠ¶æ€å¯„å­˜å™¨ä¸?çš„å…³é”?ä½?
-    if (!(Status->Rate_Common & S_RATE_COM_STS_RDY))  // æ£€æŸ¥è?’é€Ÿåº¦çŠ¶æ€å°±ç»?ä½?
+    // æ£€ï¿½?Rate CommonçŠ¶æ€å¯„å­˜å™¨ï¿½?çš„å…³ï¿½?ï¿½?
+    if (!(Status->Rate_Common & S_RATE_COM_STS_RDY))  // æ£€æŸ¥ï¿½?ï¿½é€Ÿåº¦çŠ¶æ€å°±ï¿½?ï¿½?
         return false;
     
-    // æ£€æŸ¥å„ä¸?è½´çš„çŠ¶æ€å°±ç»?ä½?
+    // æ£€æŸ¥å„ï¿½?è½´çš„çŠ¶æ€å°±ï¿½?ï¿½?
     if (!(Status->Rate_X & S_RATE_X_QC) || !(Status->Rate_Y & S_RATE_Y_QC) || !(Status->Rate_Z & S_RATE_Z_QC))
         return false;
     
@@ -802,7 +798,7 @@ char* SCH1_getSnbr(void)
     static char strBuffer[15];
 
     SCH1_sendRequest(REQ_READ_SN_ID1);
-    sn_id1 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID1)); // ä¿?æ­£ï¼šä½¿ç”¨æ­£ç¡®çš„ID1è¯·æ±‚
+    sn_id1 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID1)); // ï¿½?æ­£ï¼šä½¿ç”¨æ­£ç¡®çš„ID1è¯·æ±‚
     sn_id2 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID2));
     sn_id3 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID3));
 
@@ -826,10 +822,10 @@ uint64_t hw_SPI48_Send_Request(uint64_t Request)
         txBuffer[size - index - 1] = (Request >> (index << 4)) & 0xFFFF;
     }
 
-    // Send tx buffer and receive rx buffer simultaneously (Ê¹ÓÃÈí¼şSPI)
+    // Send tx buffer and receive rx buffer simultaneously (Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SPI)
     hw_CS_Low();
-    system_delay_us(1);  // Small delay for CS to settle (¸ù¾İSCH16TK10Êı¾İÊÖ²áÒªÇó)
-    // ×¢Òâ£ºÊ¹ÓÃÊµÏÖÎÄ¼şÖĞµÄÊµ¼Êº¯ÊıÃû£¨¿âµÄÍ·ÎÄ¼şÉùÃ÷ÓĞÎó£©
+    system_delay_us(1);  // Small delay for CS to settle (ï¿½ï¿½ï¿½ï¿½SCH16TK10ï¿½ï¿½ï¿½ï¿½ï¿½Ö²ï¿½Òªï¿½ï¿½)
+    // ×¢ï¿½â£ºÊ¹ï¿½ï¿½Êµï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ğµï¿½Êµï¿½Êºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     soft_spi_16bit_transfer(&sch16_spi, txBuffer, rxBuffer, size);
     system_delay_us(1);  // Small delay before releasing CS
     hw_CS_High();
@@ -848,13 +844,13 @@ uint64_t SCH1_sendRequest(uint64_t Request)
 {
     uint64_t response = hw_SPI48_Send_Request(Request);
     
-    // è‡?åŠ¨æ›´æ–°SPIç»Ÿè?¡ä¿¡æ?
+    // ï¿½?åŠ¨æ›´æ–°SPIç»Ÿï¿½?ï¿½ä¿¡ï¿½?
     if (response & ERROR_FIELD_MASK) {
-        // æ£€æŸ¥æ˜¯å¦æ˜¯CRCé”™è??
+        // æ£€æŸ¥æ˜¯å¦æ˜¯CRCé”™ï¿½??
         if (!SCH1_checkCRC8(response)) {
-            SCH1_updateSPIStats(false, 1);  // CRCé”™è??
+            SCH1_updateSPIStats(false, 1);  // CRCé”™ï¿½??
         } else {
-            SCH1_updateSPIStats(false, 2);  // å¸§é”™è¯?
+            SCH1_updateSPIStats(false, 2);  // å¸§é”™ï¿½?
         }
     } else {
         SCH1_updateSPIStats(true, 0);       // æˆåŠŸ
@@ -920,7 +916,7 @@ bool SCH1_checkCRC3(uint32_t SPIframe)
 
 int SCH1_init(SCH1_filter sFilter, SCH1_sensitivity sSensitivity, SCH1_decimation sDecimation, bool enableDRY) 
 {
-    // ä½¿ç”¨ç¡?ä»¶æŠ½è±¡å±‚åˆå?‹åŒ–
+    // ä½¿ç”¨ï¿½?ä»¶æŠ½è±¡å±‚åˆï¿½?ï¿½åŒ–
     hw_init();
   
     int ret = SCH1_OK;
@@ -1132,17 +1128,17 @@ bool SCH1_testSPIStability(void)
     return is_stable;
 }
 
-// å…¨å±€SPIç»Ÿè?¡å˜é‡?
+// å…¨å±€SPIç»Ÿï¿½?ï¿½å˜ï¿½?
 static SCH1_spi_stats g_spi_stats = {0};
 
-// é‡ç½®SPIç»Ÿè??
+// é‡ç½®SPIç»Ÿï¿½??
 void SCH1_resetSPIStats(void)
 {
     memset(&g_spi_stats, 0, sizeof(SCH1_spi_stats));
     printf("SPI statistics reset\r\n");
 }
 
-// æ›´æ–°SPIç»Ÿè??
+// æ›´æ–°SPIç»Ÿï¿½??
 void SCH1_updateSPIStats(bool success, uint32_t error_type)
 {
     g_spi_stats.total_requests++;
@@ -1155,12 +1151,12 @@ void SCH1_updateSPIStats(bool success, uint32_t error_type)
         g_spi_stats.consecutive_errors++;
         g_spi_stats.last_error_type = error_type;
         
-        // æ›´æ–°æœ€å¤§è¿ç»?é”™è??æ¬¡æ•°
+        // æ›´æ–°æœ€å¤§è¿ï¿½?é”™ï¿½??æ¬¡æ•°
         if (g_spi_stats.consecutive_errors > g_spi_stats.max_consecutive_errors) {
             g_spi_stats.max_consecutive_errors = g_spi_stats.consecutive_errors;
         }
         
-        // æ ¹æïúé”™è??ç±»å‹æ›´æ–°å¯¹åº”è®¡æ•°å™?
+        // æ ¹ï¿½ï¿½ï¿½é”™ï¿½??ç±»å‹æ›´æ–°å¯¹åº”è®¡æ•°ï¿½?
         switch (error_type) {
             case 1: g_spi_stats.crc_errors++; break;
             case 2: g_spi_stats.frame_errors++; break;
@@ -1169,34 +1165,34 @@ void SCH1_updateSPIStats(bool success, uint32_t error_type)
         }
     }
     
-    // è®¡ç®—é”™è??ç?
+    // è®¡ç®—é”™ï¿½??ï¿½?
     if (g_spi_stats.total_requests > 0) {
         g_spi_stats.error_rate = (float)(g_spi_stats.total_requests - g_spi_stats.successful_requests) / 
                                 (float)g_spi_stats.total_requests * 100.0f;
     }
 }
 
-// æ‰“å°SPIç»Ÿè?¡ä¿¡æ?
+// æ‰“å°SPIç»Ÿï¿½?ï¿½ä¿¡ï¿½?
 void SCH1_printSPIStats(void)
 {
-    printf("\r\n=== SPIé€šä¿¡ç»Ÿè?¡æŠ¥å‘? ===\r\n");
-    printf("æ€»è?·æ±‚æ¬¡æ•°: %lu\r\n", g_spi_stats.total_requests);
+    printf("\r\n=== SPIé€šä¿¡ç»Ÿï¿½?ï¿½æŠ¥ï¿½? ===\r\n");
+    printf("æ€»ï¿½?ï¿½æ±‚æ¬¡æ•°: %lu\r\n", g_spi_stats.total_requests);
     printf("æˆåŠŸè¯·æ±‚æ¬¡æ•°: %lu\r\n", g_spi_stats.successful_requests);
     printf("å¤±è´¥è¯·æ±‚æ¬¡æ•°: %lu\r\n", g_spi_stats.total_requests - g_spi_stats.successful_requests);
-    printf("é”™è??ç?: %.2f%%\r\n", g_spi_stats.error_rate);
-    printf("\r\n--- é”™è??ç±»å‹ç»Ÿè?? ---\r\n");
-    printf("CRCé”™è??: %lu\r\n", g_spi_stats.crc_errors);
-    printf("å¸§é”™è¯?: %lu\r\n", g_spi_stats.frame_errors);
-    printf("è¶…æ—¶é”™è??: %lu\r\n", g_spi_stats.timeout_errors);
-    printf("æ•°å€¼ä¸ä¸€è‡?: %lu\r\n", g_spi_stats.value_inconsistencies);
-    printf("\r\n--- è¿ç»­é”™è??ç»Ÿè?? ---\r\n");
-    printf("å½“å‰è¿ç»­é”™è??: %lu\r\n", g_spi_stats.consecutive_errors);
-    printf("æœ€å¤§è¿ç»?é”™è??: %lu\r\n", g_spi_stats.max_consecutive_errors);
-    printf("æœ€åä¸€æ¬¡é”™è¯?ç±»å‹: %lu\r\n", g_spi_stats.last_error_type);
+    printf("é”™ï¿½??ï¿½?: %.2f%%\r\n", g_spi_stats.error_rate);
+    printf("\r\n--- é”™ï¿½??ç±»å‹ç»Ÿï¿½?? ---\r\n");
+    printf("CRCé”™ï¿½??: %lu\r\n", g_spi_stats.crc_errors);
+    printf("å¸§é”™ï¿½?: %lu\r\n", g_spi_stats.frame_errors);
+    printf("è¶…æ—¶é”™ï¿½??: %lu\r\n", g_spi_stats.timeout_errors);
+    printf("æ•°å€¼ä¸ä¸€ï¿½?: %lu\r\n", g_spi_stats.value_inconsistencies);
+    printf("\r\n--- è¿ç»­é”™ï¿½??ç»Ÿï¿½?? ---\r\n");
+    printf("å½“å‰è¿ç»­é”™ï¿½??: %lu\r\n", g_spi_stats.consecutive_errors);
+    printf("æœ€å¤§è¿ï¿½?é”™ï¿½??: %lu\r\n", g_spi_stats.max_consecutive_errors);
+    printf("æœ€åä¸€æ¬¡é”™ï¿½?ç±»å‹: %lu\r\n", g_spi_stats.last_error_type);
     printf("========================================\r\n");
 }
 
-// è·å–SPIç»Ÿè?¡ä¿¡æ?
+// è·å–SPIç»Ÿï¿½?ï¿½ä¿¡ï¿½?
 void SCH1_getSPIStats(SCH1_spi_stats *stats)
 {
     if (stats != NULL) {
@@ -1204,45 +1200,45 @@ void SCH1_getSPIStats(SCH1_spi_stats *stats)
     }
 }
 
-// è¯¦ç»†çš„SPIç¨³å®šæ€§æµ‹è¯?
+// è¯¦ç»†çš„SPIç¨³å®šæ€§æµ‹ï¿½?
 bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
 {
-    const int test_count = 20;  // å¢åŠ æµ‹è¯•æ¬¡æ•°ä»¥è·å¾—æ›´å‡†ç¡®çš„ç»Ÿè®?
+    const int test_count = 20;  // å¢åŠ æµ‹è¯•æ¬¡æ•°ä»¥è·å¾—æ›´å‡†ç¡®çš„ç»Ÿï¿½?
     uint16_t test_values[20];
     bool is_stable = true;
     uint32_t consistent_count = 0;
     
-    printf("=== è¯¦ç»†SPIç¨³å®šæ€§æµ‹è¯? ===\r\n");
+    printf("=== è¯¦ç»†SPIç¨³å®šæ€§æµ‹ï¿½? ===\r\n");
     printf("æµ‹è¯•æ¬¡æ•°: %d\r\n", test_count);
     
-    // é‡ç½®ç»Ÿè??
+    // é‡ç½®ç»Ÿï¿½??
     SCH1_resetSPIStats();
     
     for (int i = 0; i < test_count; i++) {
         uint64_t response = SCH1_sendRequest(REQ_READ_STAT_SUM);
         test_values[i] = SPI48_DATA_UINT16(response);
         
-        // æ£€æŸ?CRCé”™è??
+        // æ£€ï¿½?CRCé”™ï¿½??
         if (response & ERROR_FIELD_MASK) {
-            printf("æµ‹è¯• %2d: CRCé”™è?? - å“åº”: 0x%012llX\r\n", i+1, response);
-            SCH1_updateSPIStats(false, 1);  // CRCé”™è??
+            printf("æµ‹è¯• %2d: CRCé”™ï¿½?? - å“åº”: 0x%012llX\r\n", i+1, response);
+            SCH1_updateSPIStats(false, 1);  // CRCé”™ï¿½??
             is_stable = false;
         } else {
             SCH1_updateSPIStats(true, 0);   // æˆåŠŸ
         }
         
-        hw_delay(2);  // å¢åŠ å»¶æ—¶ä»¥ç¡®ä¿ç¨³å®šæ€?
+        hw_delay(2);  // å¢åŠ å»¶æ—¶ä»¥ç¡®ä¿ç¨³å®šï¿½?
     }
     
-    // æ£€æŸ¥æ•°å€¼ä¸€è‡´æ€?
+    // æ£€æŸ¥æ•°å€¼ä¸€è‡´ï¿½?
     uint16_t first_value = test_values[0];
     for (int i = 1; i < test_count; i++) {
         if (test_values[i] == first_value) {
             consistent_count++;
         } else {
-            printf("æ•°å€¼ä¸ä¸€è‡?: æœŸæœ› 0x%04X, å®é™… 0x%04X (æµ‹è¯• %d)\r\n", 
+            printf("æ•°å€¼ä¸ä¸€ï¿½?: æœŸæœ› 0x%04X, å®é™… 0x%04X (æµ‹è¯• %d)\r\n", 
                    first_value, test_values[i], i+1);
-            SCH1_updateSPIStats(false, 4);  // æ•°å€¼ä¸ä¸€è‡?
+            SCH1_updateSPIStats(false, 4);  // æ•°å€¼ä¸ä¸€ï¿½?
             is_stable = false;
         }
     }
@@ -1252,18 +1248,18 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
     
     printf("\r\n--- æµ‹è¯•ç»“æœ ---\r\n");
     printf("ä¸€è‡´æ€§ç‡: %.1f%% (%d/%d)\r\n", consistency_rate, consistent_count, test_count-1);
-    printf("æœŸæœ›å€?: 0x%04X\r\n", first_value);
+    printf("æœŸæœ›ï¿½?: 0x%04X\r\n", first_value);
     
     if (is_stable) {
-        printf("âœ? SPIé€šä¿¡ç¨³å®š\r\n");
+        printf("ï¿½? SPIé€šä¿¡ç¨³å®š\r\n");
     } else {
-        printf("âœ? SPIé€šä¿¡ä¸ç¨³å®š\r\n");
+        printf("ï¿½? SPIé€šä¿¡ä¸ç¨³å®š\r\n");
     }
     
-    // æ‰“å°è¯¦ç»†ç»Ÿè??
+    // æ‰“å°è¯¦ç»†ç»Ÿï¿½??
     SCH1_printSPIStats();
     
-    // å¦‚æœæä¾›äº†statså‚æ•°ï¼Œå?åˆ¶ç»Ÿè?¡ç»“æ?
+    // å¦‚æœæä¾›äº†statså‚æ•°ï¼Œï¿½?ï¿½åˆ¶ç»Ÿï¿½?ï¿½ç»“ï¿½?
     if (stats != NULL) {
         memcpy(stats, &g_spi_stats, sizeof(SCH1_spi_stats));
     }
@@ -1271,29 +1267,29 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
     return is_stable;
 }
 
-// æ¼”ç¤ºSPIç»Ÿè?¡åŠŸèƒ½çš„ä½¿ç”¨
+// æ¼”ç¤ºSPIç»Ÿï¿½?ï¿½åŠŸèƒ½çš„ä½¿ç”¨
 void SCH1_demoSPIStats(void)
 {
-    printf("\r\n=== SPIç»Ÿè?¡åŠŸèƒ½æ¼”ç¤? ===\r\n");
+    printf("\r\n=== SPIç»Ÿï¿½?ï¿½åŠŸèƒ½æ¼”ï¿½? ===\r\n");
     
-    // é‡ç½®ç»Ÿè??
+    // é‡ç½®ç»Ÿï¿½??
     SCH1_resetSPIStats();
     
-    // è¿›è?Œä¸€äº›æµ‹è¯•è?·æ±‚
-    printf("è¿›è?Œæµ‹è¯•è?·æ±‚...\r\n");
+    // è¿›ï¿½?ï¿½ä¸€äº›æµ‹è¯•ï¿½?ï¿½æ±‚
+    printf("è¿›ï¿½?ï¿½æµ‹è¯•ï¿½?ï¿½æ±‚...\r\n");
     for (int i = 0; i < 20; i++) {
         SCH1_sendRequest(REQ_READ_STAT_SUM);
         hw_delay(1);
     }
     
-    // æ‰“å°å½“å‰ç»Ÿè??
-    printf("å½“å‰ç»Ÿè?¡ä¿¡æ?:\r\n");
+    // æ‰“å°å½“å‰ç»Ÿï¿½??
+    printf("å½“å‰ç»Ÿï¿½?ï¿½ä¿¡ï¿½?:\r\n");
     SCH1_printSPIStats();
     
-    // è¿›è?Œè?¦ç»†ç¨³å®šæ€§æµ‹è¯?
-    printf("\r\nå¼€å§‹è?¦ç»†ç¨³å®šæ€§æµ‹è¯?...\r\n");
+    // è¿›ï¿½?ï¿½ï¿½?ï¿½ç»†ç¨³å®šæ€§æµ‹ï¿½?
+    printf("\r\nå¼€å§‹ï¿½?ï¿½ç»†ç¨³å®šæ€§æµ‹ï¿½?...\r\n");
     SCH1_spi_stats test_stats;
     bool is_stable = SCH1_testSPIStabilityDetailed(&test_stats);
     
-    printf("\r\næµ‹è¯•å®Œæˆ! ç¨³å®šæ€?: %s\r\n", is_stable ? "ç¨³å®š" : "ä¸ç¨³å®?");
+    printf("\r\næµ‹è¯•å®Œæˆ! ç¨³å®šï¿½?: %s\r\n", is_stable ? "ç¨³å®š" : "ä¸ç¨³ï¿½?");
 }

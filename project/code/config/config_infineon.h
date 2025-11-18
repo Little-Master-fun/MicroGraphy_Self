@@ -14,9 +14,9 @@
 #define FILTER_ACC12        30.0f
 #define FILTER_ACC3         30.0f
 // Sensitivity settings
-// Note: Sensor outputs are in g units, but treated as m/s? in the application (1g ¡Ö 9.8 m/s?)
-#define SENSITIVITY_RATE1   6400.0f     // LSB / dps, DYN1 Nominal Sensitivity for 20 bit data
-#define SENSITIVITY_RATE2   6400.0f
+// Note: Sensor outputs are in g units, but treated as m/s? in the application (1g ï¿½ï¿½ 9.8 m/s?)
+#define SENSITIVITY_RATE1   200.0f     // LSB / dps, DYN1 Nominal Sensitivity for 20 bit data
+#define SENSITIVITY_RATE2   200.0f
 #define SENSITIVITY_ACC1    25600.0f    // LSB / g, DYN1 Nominal Sensitivity for 20 bit data
 #define SENSITIVITY_ACC2    25600.0f
 #define SENSITIVITY_ACC3    25600.0f

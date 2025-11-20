@@ -37,18 +37,18 @@
 // 测，为什么没有怀疑往年代码设置错了呢，申请到完整数据手册才看见，灵敏度配置都不对，sb往年代码
 
 
-#define DELTA_T              0.002f         // 更新周期 
+#define DELTA_T              0.01f         // 更新周期 
 #define ALPHA                0.2f           // 加速度计低通滤波系数
 #define G_TO_M_S2            9.80665f       // 重力加速度转换系数
 #define DEG_TO_RAD           0.017453292519943295f  // 度转弧度 (π/180)，传感器输出是dps需要转换
 #define AHRS_PI              3.1415926535f  // 圆周率
 
 // 陀螺仪零偏校准参数
-#define GYRO_CALIB_START     400            // 开始校准的采样点 (800ms后开始) 400
-#define GYRO_CALIB_END       1400           // 结束校准的采样点 (2800ms)
-#define GYRO_CALIB_SAMPLES   1000           // 校准采样点数 (累加1000次，持续2秒)
-#define GYRO_CALIB_FINISH    1500           // 校准完成点 (3000ms)
-#define GYRO_READY_COUNT     1800           // 系统准备就绪点 (3600ms，约3.6秒)
+#define GYRO_CALIB_START     40            // 开始校准的采样点 (800ms后开始) 400
+#define GYRO_CALIB_END       140           // 结束校准的采样点 (2800ms)
+#define GYRO_CALIB_SAMPLES   100           // 校准采样点数 (累加1000次，持续2秒)
+#define GYRO_CALIB_FINISH    150           // 校准完成点 (3000ms)
+#define GYRO_READY_COUNT     180           // 系统准备就绪点 (3600ms，约3.6秒)
 
 //=================================================全局变量定义================================================
 static ahrs_system_t ahrs_system = {0};

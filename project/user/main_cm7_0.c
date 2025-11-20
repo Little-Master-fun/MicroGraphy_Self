@@ -84,7 +84,7 @@ int main(void)
     //motor_set_target_speed(0.0f,0.0f);
     motor_start_pwm_record();
     // 启动定时器中断
-    pit_ms_init(PIT_CH2, 2);  // IMU数据采集 (1ms)
+    pit_ms_init(PIT_CH2, 10);  // IMU数据采集 (10ms)
     pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
     pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
     

@@ -269,6 +269,144 @@ nav_ahrs_status_enum test_nav_ahrs_generate_rectangle_path(float length, float w
     return NAV_AHRS_STATUS_OK;
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     生成多圈长方形测试路径
+// 参数说明     length          长方形长边 (m)
+// 参数说明     width           长方形短边 (m)
+// 参数说明     laps            生成的圈数
+// 返回参数     状态
+//-------------------------------------------------------------------------------------------------------------------
+nav_ahrs_status_enum test_nav_ahrs_generate_multi_laps_path(float length, float width, uint16 laps)
+{
+    if (!nav_ahrs.initialized) {
+        return NAV_AHRS_STATUS_NOT_INIT;
+    }
+    
+    if (laps == 0) {
+        printf("[NAV_AHRS] 错误：圈数不能为0\n");
+        return NAV_AHRS_STATUS_ERROR;
+    }
+    
+    // 计算单圈参数
+    float perimeter = 2.0f * (length + width);  // 周长 (m)
+    float single_lap_distance = perimeter * 1000.0f;  // 单圈距离 (mm)
+    float distance_long = length * 1000.0f;   // 长边距离
+    float distance_short = width * 1000.0f;   // 短边距离
+    
+    // 估算单圈路径点数
+    uint16 single_lap_points = (uint16)(single_lap_distance / NAV_AHRS_DISTANCE_PER_POINT) + 1;
+    
+    // 检查是否超出最大路径点数
+    if (single_lap_points * laps > NAV_AHRS_MAX_POINTS) {
+        printf("[NAV_AHRS] 警告：%d圈需要%d点，超过最大限制%d点\n", 
+               laps, single_lap_points * laps, NAV_AHRS_MAX_POINTS);
+        printf("[NAV_AHRS] 建议：减少圈数或增大点间距\n");
+        return NAV_AHRS_STATUS_ERROR;
+    }
+    
+    printf("[NAV_AHRS] 开始生成%d圈长方形路径 (%.1fm × %.1fm)...\n", laps, length, width);
+    
+    uint16 point_idx = 0;
+    
+    // 循环生成多圈路径
+    for (uint16 lap = 0; lap < laps; lap++) {
+        float lap_base_distance = lap * single_lap_distance;  // 当前圈的距离基准
+        float current_distance = lap_base_distance;
+        
+        // 第一条边：0° (向右, 长边)
+        float yaw = 0.0f;
+        float side1_end = lap_base_distance + distance_long;
+        while (current_distance < side1_end && point_idx < NAV_AHRS_MAX_POINTS) {
+            nav_ahrs.path.points[point_idx].yaw = yaw;
+            nav_ahrs.path.points[point_idx].distance = current_distance;
+            point_idx++;
+            current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+        }
+        
+        // 第二条边：90° (向上, 短边)
+        yaw = 90.0f;
+        float side2_end = lap_base_distance + distance_long + distance_short;
+        while (current_distance < side2_end && point_idx < NAV_AHRS_MAX_POINTS) {
+            nav_ahrs.path.points[point_idx].yaw = yaw;
+            nav_ahrs.path.points[point_idx].distance = current_distance;
+            point_idx++;
+            current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+        }
+        
+        // 第三条边：180° (向左, 长边)
+        yaw = 180.0f;
+        float side3_end = lap_base_distance + 2.0f * distance_long + distance_short;
+        while (current_distance < side3_end && point_idx < NAV_AHRS_MAX_POINTS) {
+            nav_ahrs.path.points[point_idx].yaw = yaw;
+            nav_ahrs.path.points[point_idx].distance = current_distance;
+            point_idx++;
+            current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+        }
+        
+        // 第四条边：270° (向下, 短边)
+        yaw = 270.0f;
+        float side4_end = lap_base_distance + single_lap_distance;
+        while (current_distance < side4_end && point_idx < NAV_AHRS_MAX_POINTS) {
+            nav_ahrs.path.points[point_idx].yaw = yaw;
+            nav_ahrs.path.points[point_idx].distance = current_distance;
+            point_idx++;
+            current_distance += NAV_AHRS_DISTANCE_PER_POINT;
+        }
+    }
+    
+    // 添加转弯过渡点（平滑转角）- 只处理每圈的4个转角
+    for (uint16 lap = 0; lap < laps; lap++) {
+        uint16 lap_offset = lap * single_lap_points;
+        
+        uint16 corner_indices[] = {
+            lap_offset + (uint16)(distance_long / NAV_AHRS_DISTANCE_PER_POINT),                           // 第一个转角
+            lap_offset + (uint16)((distance_long + distance_short) / NAV_AHRS_DISTANCE_PER_POINT),        // 第二个转角
+            lap_offset + (uint16)((2.0f * distance_long + distance_short) / NAV_AHRS_DISTANCE_PER_POINT)  // 第三个转角
+        };
+        
+        // 平滑转角（添加过渡段）
+        for (int i = 0; i < 3; i++) {
+            uint16 corner_idx = corner_indices[i];
+            if (corner_idx > 5 && corner_idx < point_idx - 5) {
+                float angle_start = nav_ahrs.path.points[corner_idx - 5].yaw;
+                float angle_end = nav_ahrs.path.points[corner_idx + 5].yaw;
+                
+                // 处理角度跨越问题
+                if (fabs(angle_end - angle_start) > 180.0f) {
+                    if (angle_end > angle_start) {
+                        angle_start += 360.0f;
+                    } else {
+                        angle_end += 360.0f;
+                    }
+                }
+                
+                // 线性插值过渡段
+                for (int j = -4; j <= 4; j++) {
+                    float ratio = (j + 4) / 8.0f;
+                    float smooth_yaw = angle_start + (angle_end - angle_start) * ratio;
+                    // 归一化角度
+                    while (smooth_yaw > 180.0f) smooth_yaw -= 360.0f;
+                    while (smooth_yaw <= -180.0f) smooth_yaw += 360.0f;
+                    nav_ahrs.path.points[corner_idx + j].yaw = smooth_yaw;
+                }
+            }
+        }
+    }
+    
+    nav_ahrs.path.total_points = point_idx;
+    nav_ahrs.path.current_index = 0;
+    nav_ahrs.path.loop_mode = 1;  // 非循环模式（已经预生成了多圈）
+    nav_ahrs.path.single_lap_points = single_lap_points;  // 记录单圈路径点数（用于统计）
+    nav_ahrs.path.single_lap_distance = single_lap_distance;  // 记录单圈总距离
+    nav_ahrs.path.completed_laps = 0;  // 初始化完成圈数
+    nav_ahrs.path_loaded = 1;
+    
+    printf("[NAV_AHRS] 多圈路径生成完成: %d圈, 单圈%d点, 总计%d点, 总距离%.1fmm\n", 
+           laps, single_lap_points, point_idx, laps * single_lap_distance);
+    
+    return NAV_AHRS_STATUS_OK;
+}
+
 //=================================================核心函数================================================
 
 /**

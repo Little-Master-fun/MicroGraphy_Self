@@ -46,6 +46,16 @@ nav_ahrs_status_enum test_nav_ahrs_generate_straight_path(float length, float di
  */
 nav_ahrs_status_enum test_nav_ahrs_generate_rectangle_path(float length, float width);
 
+/**
+ * @brief  生成多圈长方形测试路径
+ * @param  length       长方形长边 (m)
+ * @param  width        长方形短边 (m)
+ * @param  laps         生成的圈数
+ * @retval 状态
+ * @note   一次性生成指定圈数的长方形路径点，适用于需要预先生成多圈路径的场景
+ */
+nav_ahrs_status_enum test_nav_ahrs_generate_multi_laps_path(float length, float width, uint16 laps);
+
 //=================================================启动函数声明================================================
 
 /**

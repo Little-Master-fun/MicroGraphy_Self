@@ -74,12 +74,14 @@ int main(void)
     nav_ahrs_init();
     
     // 生成测试路径
-    // 生成正方形路径 (1m × 1m)
+    // 生成正方形路径
     //test_nav_ahrs_generate_square_path(0.7f)
       ;
-    // 生成长方形路径 (1m × 0.5m)
-    test_nav_ahrs_generate_rectangle_path(0.8f, 0.15f);
+    // 生成长方形路径 
+    //test_nav_ahrs_generate_rectangle_path(0.5f, 0.5f);
 
+    // 生成多圈长方形路径
+    test_nav_ahrs_generate_multi_laps_path(0.5f, 0.5f, 20);
     // 生成直线路径
     //test_nav_ahrs_generate_straight_path(1.0f, 0.0f);
     

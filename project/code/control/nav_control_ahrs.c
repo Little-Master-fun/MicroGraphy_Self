@@ -43,13 +43,13 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     memset(&nav_ahrs, 0, sizeof(nav_ahrs_controller_t));
     
     // 初始化转弯PID参数（大误差，快速响应）
-    nav_ahrs.pid_turn.kp = 0.55f;
+    nav_ahrs.pid_turn.kp = 0.6f;
     nav_ahrs.pid_turn.ki = 0.005f;
     nav_ahrs.pid_turn.kd = 0.03f;
     nav_ahrs.pid_turn.integral_limit = 50.0f;
     
     // 初始化直线PID参数（小误差，稳定精确）
-    nav_ahrs.pid_straight.kp = 0.5f;
+    nav_ahrs.pid_straight.kp = 0.6f;
     nav_ahrs.pid_straight.ki = 0.002f;
     nav_ahrs.pid_straight.kd = 0.3f;
     nav_ahrs.pid_straight.integral_limit = 20.0f;
@@ -58,7 +58,7 @@ nav_ahrs_status_enum nav_ahrs_init(void)
     nav_ahrs.base_speed = 2.5f;  // 基础速度 (m/s)
     
     // 初始化前瞻参数
-    nav_ahrs.lookahead_distance = NAV_AHRS_DISTANCE_PER_POINT * 5;  // 默认前瞻5个点 (mm)
+    nav_ahrs.lookahead_distance = NAV_AHRS_DISTANCE_PER_POINT * 1;  // 默认前瞻5个点 (mm)
     
     // 系统状态
     nav_ahrs.mode = NAV_AHRS_MODE_IDLE;

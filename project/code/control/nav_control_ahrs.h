@@ -29,7 +29,7 @@
 #endif
 
 //=================================================配置参数================================================
-#define NAV_AHRS_MAX_POINTS         2000        // 最大路径点数
+#define NAV_AHRS_MAX_POINTS         20000        // 最大路径点数
 #define NAV_AHRS_DISTANCE_PER_POINT 4.0f        // 每个点的距离间隔 (mm)
 #define NAV_AHRS_WHEELBASE          0.134f      // 轮距 (m)
 #define NAV_AHRS_WHEEL_DIAMETER     0.065f      // 轮径 (m)
@@ -69,6 +69,9 @@ typedef struct {
     uint16 total_points;                                 // 总路径点数
     uint16 current_index;                                // 当前跟踪点索引
     uint8 loop_mode;                                     // 循环模式标志
+    uint16 single_lap_points;                            // 单圈路径点数（用于循环追加）
+    uint16 completed_laps;                               // 已完成的圈数
+    float single_lap_distance;                           // 单圈总距离 (mm)
 } nav_ahrs_path_t;
 
 // PID控制器结构体

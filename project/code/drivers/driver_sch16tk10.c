@@ -9,34 +9,29 @@
 * 
 * �ļ�����˵����
 * ���ļ���Murata SCH1600ϵ�и߾���IMU����������������ʵ��
-* �ṩ�����Ĵ��������ơ����ݶ�ȡ�����ù�������Ϲ���?
+* �ṩ�����Ĵ��������ơ����ݶ�ȡ�����ù�������Ϲ���?
 * 
 * ʹ��ע�����
 * 1. ȷ��SPIʱ�����㴫����Ҫ��
-* 2. ��ʼ��ǰ���Ӳ������?
+* 2. ��ʼ��ǰ���Ӳ������?
 * 3. ����Ӧ�����������˲�����������
-* 4. ���ڼ�鴫����״�?
-* 5. �ڹؼ�Ӧ��������ͨ�ż��?
+* 4. ���ڼ�鴫����״�?
+* 5. �ڹؼ�Ӧ��������ͨ�ż��?
 ********************************************************************************************************************/
 
 #include "driver_sch16tk10.h"
 #include "zf_common_headfile.h"
 
 // Ӳ�����Ŷ��� / Hardware pin definitions (����ԭ��ͼ U42)
-// ע�⣺ԭ��ͼP07.x�����޷���Ӳ��SPI��ʹ������SPI
+// ע�⣺P07.x���ſ���ʹ��Ӳ��SPI4(SCB5)ģ��
 #define EXTRESN_PORT    P07_4               // ��λ���� / Reset pin EXTRESN (����44)
+// SPI���ţ�ʹ��Ӳ��SPI / SPI pins, using hardware SPI
+// ע�⣺Ƭѡ�źţ�CS��ʹ��GPIO��ʽ���Ʋ�ʹ��Ӳ��SPIƬѡ����Ϊ��Ҫ���ֶ���Ƭѡʱ��
 #define SPI_CS_PIN      P07_3               // GPIO��ʽ��Ƭѡ���� / CS pin as GPIO (����43)
-#define SOFT_SPI_SCK    P07_2               // ����SPIʱ������ / Software SPI SCK pin (����42)
-#define SOFT_SPI_MOSI   P07_1               // ����SPI MOSI���� / Software SPI MOSI pin (����41)
-#define SOFT_SPI_MISO   P07_0               // ����SPI MISO���� / Software SPI MISO pin (����40)
 #define GPIO_RESET      (P07_4)             // ���ø�λ���� / Alternative reset pin
 
-// ����SPI�ṹ��
-static soft_spi_info_struct sch16_spi;
-
-// �ⲿ�������������ͷ�ļ�������ʵ�ֲ�һ�£��ֶ�����ʵ�ʺ�����?
-// ע�⣺ʵ��ʵ�ֵĺ������� soft_spi_16bit_transfer����ͷ�ļ����������� soft_spi_transfer_16bit
-extern void soft_spi_16bit_transfer(soft_spi_info_struct *soft_spi_obj, const uint16 *write_buffer, uint16 *read_buffer, uint32 len);
+// SPIģ��ö�� (ʹ��SPI4��SCB5)
+#define SCH16_SPI_MODULE    SPI_4
 
 // ��̬�������� / Static variable definitions
 static pit_index_enum sampling_timer = PIT_CH0;  // ������ʱ��ͨ�� / Sampling timer channel
@@ -48,28 +43,32 @@ static uint8_t CRC8(uint64_t SPIframe);    // ����8λCRCУ�� / Calcu
 static uint8_t CRC3(uint32_t SPIframe);    // ����3λCRCУ�� / Calculate 3-bit CRC
 
 // ================================
-// Ӳ������㺯��ʵ��? / Hardware abstraction layer functions
+// Ӳ������㺯��ʵ��? / Hardware abstraction layer functions
 // ================================
 
 /**
  * @brief  GPIO���ų�ʼ�� / GPIO pins initialization
  */
 static void GPIO_init(void) {
-    // ��ʼ���ⲿ��λ���ţ����������Ĭ�ϸߵ��?
+    // ��ʼ���ⲿ��λ���ţ����������Ĭ�ϸߵ��?
     // Initialize external reset pin, push-pull output, default high level
     gpio_init(EXTRESN_PORT, GPO, GPIO_HIGH, GPO_PUSH_PULL);
     
-    // ��ʼ��SPIƬѡ���ţ����������Ĭ�ϸߵ�ƽ��δѡ��״̬��?
+    // ��ʼ��SPIƬѡ���ţ����������Ĭ�ϸߵ�ƽ��δѡ��״̬��?
     // Initialize SPI chip select pin, push-pull output, default high level (deselected state)
     gpio_init(SPI_CS_PIN, GPO, GPIO_HIGH, GPO_PUSH_PULL);
 }
 
 /**
- * @brief  SPI�����ʼ��? / SPI peripheral initialization (ʹ������SPI)
+ * @brief  SPI�����ʼ��? / SPI peripheral initialization (ʹ��Ӳ��SPI4)
  */
 static void SPI_Init(void) {
-    // ʹ������SPI����ΪP07.x��֧��Ӳ��SPI :=(
-    soft_spi_init(&sch16_spi, 0, 1, SOFT_SPI_SCK, SOFT_SPI_MOSI, SOFT_SPI_MISO, SOFT_SPI_PIN_NULL);
+    // ʹ��Ӳ��SPI4ģ�飨SCB5��������P07��?
+    // ʹ��MODE0��ģʽ��CPOLֵΪ0��CPHAֵΪ0
+    // ����������Ϊ1MHz��SCH16TK10֧����20MHz SPI
+    // ע�⣺Ƭѡ����ΪSPI_CS_NULL������ʹ��GPIO�ֶ���Ƭѡʱ��
+    spi_init(SPI_4, SPI_MODE0, 1*1000*1000,
+             SPI4_CLK_P07_2, SPI4_MOSI_P07_1, SPI4_MISO_P07_0, SPI_CS_NULL);
 }
 
 /**
@@ -765,20 +764,20 @@ bool SCH1_verifyStatus(SCH1_status *Status)
         return false;
     }
 
-    // 检查关�??状态位，而不�??要求所有寄存器都是0xffff
-    // 检�??Summary寄存器中的关�??�??
-    if (!(Status->Summary & S_SUM_INIT_RDY))  // 检查初始化就绪�??
+    // 检查关�??状态位，而不�??要求所有寄存器都是0xffff
+    // 检�??Summary寄存器中的关�??�??
+    if (!(Status->Summary & S_SUM_INIT_RDY))  // 检查初始化就绪�??
         return false;
     
-    // 检�??Common状态寄存器�??的关�??�??
-    if (!(Status->Common & S_COM_CMN_STS_RDY))  // 检查通用状态就�??�??
+    // 检�??Common状态寄存器�??的关�??�??
+    if (!(Status->Common & S_COM_CMN_STS_RDY))  // 检查通用状态就�??�??
         return false;
     
-    // 检�??Rate Common状态寄存器�??的关�??�??
-    if (!(Status->Rate_Common & S_RATE_COM_STS_RDY))  // 检查�?�速度状态就�??�??
+    // 检�??Rate Common状态寄存器�??的关�??�??
+    if (!(Status->Rate_Common & S_RATE_COM_STS_RDY))  // 检查�?�速度状态就�??�??
         return false;
     
-    // 检查各�??轴的状态就�??�??
+    // 检查各�??轴的状态就�??�??
     if (!(Status->Rate_X & S_RATE_X_QC) || !(Status->Rate_Y & S_RATE_Y_QC) || !(Status->Rate_Z & S_RATE_Z_QC))
         return false;
     
@@ -798,7 +797,7 @@ char* SCH1_getSnbr(void)
     static char strBuffer[15];
 
     SCH1_sendRequest(REQ_READ_SN_ID1);
-    sn_id1 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID1)); // �??正：使用正确的ID1请求
+    sn_id1 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID1)); // �??正：使用正确的ID1请求
     sn_id2 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID2));
     sn_id3 = SPI48_DATA_UINT16(SCH1_sendRequest(REQ_READ_SN_ID3));
 
@@ -810,23 +809,25 @@ char* SCH1_getSnbr(void)
 
 uint64_t hw_SPI48_Send_Request(uint64_t Request)
 {
-  
+
     uint64_t ReceivedData = 0;
     uint16_t txBuffer[3];
     uint16_t rxBuffer[3];
     uint8_t index;
     uint8_t size = 3;   // 48-bit SPI-transfer consists of three 16-bit transfers.
-    
+
     // Split Request qword (MOSI data) to tx buffer
     for (index = 0; index < size; index++) {
         txBuffer[size - index - 1] = (Request >> (index << 4)) & 0xFFFF;
     }
 
-    // Send tx buffer and receive rx buffer simultaneously (ʹ������SPI)
+    // Send tx buffer and receive rx buffer simultaneously (ʹ��Ӳ��SPI)
     hw_CS_Low();
     system_delay_us(1);  // Small delay for CS to settle (����SCH16TK10�����ֲ�Ҫ��)
-    // ע�⣺ʹ��ʵ���ļ��е�ʵ�ʺ����������ͷ�ļ���������?
-    soft_spi_16bit_transfer(&sch16_spi, txBuffer, rxBuffer, size);
+
+    // ʹ��Ӳ��SPI4��ģ����16λ����
+    spi_transfer_16bit(SCH16_SPI_MODULE, txBuffer, rxBuffer, size);
+
     system_delay_us(1);  // Small delay before releasing CS
     hw_CS_High();
 
@@ -844,13 +845,13 @@ uint64_t SCH1_sendRequest(uint64_t Request)
 {
     uint64_t response = hw_SPI48_Send_Request(Request);
     
-    // �??动更新SPI统�?�信�??
+    // �??动更新SPI统�?�信�??
     if (response & ERROR_FIELD_MASK) {
         // 检查是否是CRC错�??
         if (!SCH1_checkCRC8(response)) {
             SCH1_updateSPIStats(false, 1);  // CRC错�??
         } else {
-            SCH1_updateSPIStats(false, 2);  // 帧错�??
+            SCH1_updateSPIStats(false, 2);  // 帧错�??
         }
     } else {
         SCH1_updateSPIStats(true, 0);       // 成功
@@ -916,7 +917,7 @@ bool SCH1_checkCRC3(uint32_t SPIframe)
 
 int SCH1_init(SCH1_filter sFilter, SCH1_sensitivity sSensitivity, SCH1_decimation sDecimation, bool enableDRY) 
 {
-    // 使用�??件抽象层初�?�化
+    // 使用�??件抽象层初�?�化
     hw_init();
   
     int ret = SCH1_OK;
@@ -1128,7 +1129,7 @@ bool SCH1_testSPIStability(void)
     return is_stable;
 }
 
-// 全局SPI统�?�变�??
+// 全局SPI统�?�变�??
 static SCH1_spi_stats g_spi_stats = {0};
 
 // 重置SPI统�??
@@ -1151,12 +1152,12 @@ void SCH1_updateSPIStats(bool success, uint32_t error_type)
         g_spi_stats.consecutive_errors++;
         g_spi_stats.last_error_type = error_type;
         
-        // 更新最大连�??错�??次数
+        // 更新最大连�??错�??次数
         if (g_spi_stats.consecutive_errors > g_spi_stats.max_consecutive_errors) {
             g_spi_stats.max_consecutive_errors = g_spi_stats.consecutive_errors;
         }
         
-        // 根���错�??类型更新对应计数�??
+        // 根���错�??类型更新对应计数�??
         switch (error_type) {
             case 1: g_spi_stats.crc_errors++; break;
             case 2: g_spi_stats.frame_errors++; break;
@@ -1165,34 +1166,34 @@ void SCH1_updateSPIStats(bool success, uint32_t error_type)
         }
     }
     
-    // 计算错�??�??
+    // 计算错�??�??
     if (g_spi_stats.total_requests > 0) {
         g_spi_stats.error_rate = (float)(g_spi_stats.total_requests - g_spi_stats.successful_requests) / 
                                 (float)g_spi_stats.total_requests * 100.0f;
     }
 }
 
-// 打印SPI统�?�信�??
+// 打印SPI统�?�信�??
 void SCH1_printSPIStats(void)
 {
-    printf("\r\n=== SPI通信统�?�报�?? ===\r\n");
+    printf("\r\n=== SPI通信统�?�报�?? ===\r\n");
     printf("总�?�求次数: %lu\r\n", g_spi_stats.total_requests);
     printf("成功请求次数: %lu\r\n", g_spi_stats.successful_requests);
     printf("失败请求次数: %lu\r\n", g_spi_stats.total_requests - g_spi_stats.successful_requests);
-    printf("错�??�??: %.2f%%\r\n", g_spi_stats.error_rate);
+    printf("错�??�??: %.2f%%\r\n", g_spi_stats.error_rate);
     printf("\r\n--- 错�??类型统�?? ---\r\n");
     printf("CRC错�??: %lu\r\n", g_spi_stats.crc_errors);
-    printf("帧错�??: %lu\r\n", g_spi_stats.frame_errors);
+    printf("帧错�??: %lu\r\n", g_spi_stats.frame_errors);
     printf("超时错�??: %lu\r\n", g_spi_stats.timeout_errors);
-    printf("数值不一�??: %lu\r\n", g_spi_stats.value_inconsistencies);
+    printf("数值不一�??: %lu\r\n", g_spi_stats.value_inconsistencies);
     printf("\r\n--- 连续错�??统�?? ---\r\n");
     printf("当前连续错�??: %lu\r\n", g_spi_stats.consecutive_errors);
-    printf("最大连�??错�??: %lu\r\n", g_spi_stats.max_consecutive_errors);
-    printf("最后一次错�??类型: %lu\r\n", g_spi_stats.last_error_type);
+    printf("最大连�??错�??: %lu\r\n", g_spi_stats.max_consecutive_errors);
+    printf("最后一次错�??类型: %lu\r\n", g_spi_stats.last_error_type);
     printf("========================================\r\n");
 }
 
-// 获取SPI统�?�信�??
+// 获取SPI统�?�信�??
 void SCH1_getSPIStats(SCH1_spi_stats *stats)
 {
     if (stats != NULL) {
@@ -1200,15 +1201,15 @@ void SCH1_getSPIStats(SCH1_spi_stats *stats)
     }
 }
 
-// 详细的SPI稳定性测�??
+// 详细的SPI稳定性测�??
 bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
 {
-    const int test_count = 20;  // 增加测试次数以获得更准确的统�??
+    const int test_count = 20;  // 增加测试次数以获得更准确的统�??
     uint16_t test_values[20];
     bool is_stable = true;
     uint32_t consistent_count = 0;
     
-    printf("=== 详细SPI稳定性测�?? ===\r\n");
+    printf("=== 详细SPI稳定性测�?? ===\r\n");
     printf("测试次数: %d\r\n", test_count);
     
     // 重置统�??
@@ -1218,7 +1219,7 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
         uint64_t response = SCH1_sendRequest(REQ_READ_STAT_SUM);
         test_values[i] = SPI48_DATA_UINT16(response);
         
-        // 检�??CRC错�??
+        // 检�??CRC错�??
         if (response & ERROR_FIELD_MASK) {
             printf("测试 %2d: CRC错�?? - 响应: 0x%012llX\r\n", i+1, response);
             SCH1_updateSPIStats(false, 1);  // CRC错�??
@@ -1236,9 +1237,9 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
         if (test_values[i] == first_value) {
             consistent_count++;
         } else {
-            printf("数值不一�??: 期望 0x%04X, 实际 0x%04X (测试 %d)\r\n", 
+            printf("数值不一�??: 期望 0x%04X, 实际 0x%04X (测试 %d)\r\n", 
                    first_value, test_values[i], i+1);
-            SCH1_updateSPIStats(false, 4);  // 数值不一�??
+            SCH1_updateSPIStats(false, 4);  // 数值不一�??
             is_stable = false;
         }
     }
@@ -1248,18 +1249,18 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
     
     printf("\r\n--- 测试结果 ---\r\n");
     printf("一致性率: %.1f%% (%d/%d)\r\n", consistency_rate, consistent_count, test_count-1);
-    printf("期望�??: 0x%04X\r\n", first_value);
+    printf("期望�??: 0x%04X\r\n", first_value);
     
     if (is_stable) {
-        printf("�?? SPI通信稳定\r\n");
+        printf("�?? SPI通信稳定\r\n");
     } else {
-        printf("�?? SPI通信不稳定\r\n");
+        printf("�?? SPI通信不稳定\r\n");
     }
     
     // 打印详细统�??
     SCH1_printSPIStats();
     
-    // 如果提供了stats参数，�?�制统�?�结�??
+    // 如果提供了stats参数，�?�制统�?�结�??
     if (stats != NULL) {
         memcpy(stats, &g_spi_stats, sizeof(SCH1_spi_stats));
     }
@@ -1270,7 +1271,7 @@ bool SCH1_testSPIStabilityDetailed(SCH1_spi_stats *stats)
 // 演示SPI统�?�功能的使用
 void SCH1_demoSPIStats(void)
 {
-    printf("\r\n=== SPI统�?�功能演�?? ===\r\n");
+    printf("\r\n=== SPI统�?�功能演�?? ===\r\n");
     
     // 重置统�??
     SCH1_resetSPIStats();
@@ -1283,13 +1284,13 @@ void SCH1_demoSPIStats(void)
     }
     
     // 打印当前统�??
-    printf("当前统�?�信�??:\r\n");
+    printf("当前统�?�信�??:\r\n");
     SCH1_printSPIStats();
     
-    // 进�?��?�细稳定性测�??
-    printf("\r\n开始�?�细稳定性测�??...\r\n");
+    // 进�?��?�细稳定性测�??
+    printf("\r\n开始�?�细稳定性测�??...\r\n");
     SCH1_spi_stats test_stats;
     bool is_stable = SCH1_testSPIStabilityDetailed(&test_stats);
     
-    printf("\r\n测试完成! 稳定�??: %s\r\n", is_stable ? "稳定" : "不稳�??");
+    printf("\r\n测试完成! 稳定�??: %s\r\n", is_stable ? "稳定" : "不稳�??");
 }

@@ -64,7 +64,7 @@ int main(void)
     clock_init(SYSTEM_CLOCK_250M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                       // 调试串口信息初始化
     
-    //  初始化双核通信（使用DCache同步方式，不禁用DCache）
+    //  初始化双核通信
     dual_core_comm_init_core0();
     
     //  初始化电机控制

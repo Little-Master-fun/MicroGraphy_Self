@@ -66,7 +66,7 @@ int main(void)
     
     // 负压
 
-    gpio_init(EnFan, GPO, GPIO_HIGH, GPO_PUSH_PULL);
+    //gpio_init(EnFan, GPO, GPIO_HIGH, GPO_PUSH_PULL);
 
 ;
     
@@ -91,7 +91,7 @@ int main(void)
     nav_ahrs_set_speed(1.0f);  // 设置基础速度
     nav_ahrs_set_mode(NAV_AHRS_MODE_REPLAY);
     
-    // ahrs_set_pi_params(0.005f, 0.0001f);  // 设置AHRS PI参数，提升航向角稳定性
+    // ahrs_set_pi_params(0.005f, 0.0001f);  // 设置AHRS PI，不过想了想不能使用加速度来修正
 
     // 7. 启动导航算法定时器
     pit_ms_init(PIT_CH10, 5);  // 导航算法 (5ms) - CM7_1使用CH10避免与CM7_0冲突

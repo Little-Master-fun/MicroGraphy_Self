@@ -62,9 +62,9 @@ void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     2ms
     pit_isr_flag_clear(PIT_CH1);
     
     
-    //dual_core_read_control_data();
+    dual_core_read_control_data();
     
-    // 执行电机控制（根据目标速度）
+    // 执行电机控制
     motor_control_update();
     
 }

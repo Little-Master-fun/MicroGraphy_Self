@@ -6,9 +6,11 @@
 * 修改记录
 * 日期              作者                版本
 * 2025-09-24        LittleMaster       1.0v
+* 2025-10-21        LittleMaster       2.0v
+* 2025-11-10        LittleMaster       3.0v
 * 
 * 文件作用说明：
-* 本文件实现类似dog项目的航向角跟踪导航系统
+* 本文件实现航向角跟踪导航系统
 * 核心思路：记录轨迹上每个点的航向角，回放时跟踪目标航向角
 * 
 * 主要特性：
@@ -23,12 +25,12 @@
 
 #include "zf_common_typedef.h"
 
-// 避免M_PI重复定义
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 //=================================================配置参数================================================
+// 部分弃用
 #define NAV_AHRS_MAX_POINTS         20000        // 最大路径点数
 #define NAV_AHRS_DISTANCE_PER_POINT 4.0f        // 每个点的距离间隔 (mm)
 #define NAV_AHRS_WHEELBASE          0.134f      // 轮距 (m)
@@ -57,7 +59,7 @@ typedef enum {
 } nav_ahrs_mode_enum;
 
 //=================================================数据结构定义================================================
-// 路径点结构体
+// 路径点结构体（单纯记忆转向）
 typedef struct {
     float yaw;              // 该点的航向角 (度)
     float distance;         // 该点的累积距离 (mm)
@@ -142,10 +144,10 @@ extern nav_ahrs_controller_t nav_ahrs;
 nav_ahrs_status_enum nav_ahrs_init(void);
 
 /**
- * @brief  导航系统更新（周期调用）
+ * @brief  导航系统更新
  * @param  dt       时间间隔 (s)
  * @retval 状态
- * @note   建议在5-10ms定时器中调用
+ * @note   在10ms定时器中调用
  */
 nav_ahrs_status_enum nav_ahrs_update(float dt);
 

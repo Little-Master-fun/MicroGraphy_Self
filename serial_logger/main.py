@@ -3,11 +3,11 @@ import time
 from datetime import datetime
 
 # ===================== 配置区：改这里 =====================
-SERIAL_PORT = "COM5"      # 串口号，比如 "COM3" / "COM5" / "COM7"
+SERIAL_PORT = "COM5"      # 串口号
 BAUDRATE    = 115200      # 波特率，要和无线串口模块一致
 # ========================================================
 
-# MCU 那边 CSV 的表头（和你 C 代码里的完全一致）
+# MCU 那边 CSV 的表头
 HEADER_LINE = (
     "timestamp_ms,power_on_time_s,temperature_deg,temp_rate_degps,"
     "left_speed,right_speed,linear_vel,is_stationary,"

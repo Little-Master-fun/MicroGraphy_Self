@@ -108,8 +108,8 @@ motor_pid_status_enum motor_control_update(void)
         return MOTOR_PID_NOT_INIT;
     }
     
-    // 更新编码器数据
-    encoder_update();
+
+    // encoder_update();
     
     // 获取当前速度
     float left_current = encoder_get_speed(ENCODER_ID_LEFT);

@@ -61,17 +61,17 @@ void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     2ms
 {
     pit_isr_flag_clear(PIT_CH1);
     
-    // 更新编码器数据（2ms周期，与ENCODER_SAMPLE_TIME一致）
+    // 更新编码器数据
     encoder_update();
     
-    dual_core_read_control_data();
+    //dual_core_read_control_data();
     
     // 执行电机控制
     motor_control_update();
     
 }
 
-void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      1ms
+void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      10ms
 {
     pit_isr_flag_clear(PIT_CH2);
     
@@ -79,7 +79,7 @@ void pit0_ch2_isr()                     // 定时器通道 2 周期中断服务函数      1m
     SCH1_raw_data raw_data;
     SCH1_getData(&raw_data);
     
-    // 更新AHRS姿态解算（函数内部会自动处理累加平均、校准和姿态解算）
+    // 更新AHRS姿态解算
     ahrs_complementary_update(&raw_data);
 }
 

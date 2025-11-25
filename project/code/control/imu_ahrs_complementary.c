@@ -63,7 +63,7 @@ static ahrs_pi_controller_t pi_controller = {0};
 static float yaw_gyro = 0.0f;  // SCH16TK10纯陀螺积分的航向角（度）[-180, 180]
 static float yaw_gyro_imu963ra = 0.0f;  // IMU963RA纯陀螺积分的航向角（度）[-180, 180]
 
-// 调试变量全局实例（类型定义在头文件中）
+// 调试变量全局实例
 ahrs_debug_info_t g_ahrs_debug = {0};
 
 // 传感器数据累加缓冲区（用于AVG_FACTOR次采样平均）

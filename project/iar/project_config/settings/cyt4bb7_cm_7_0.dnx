@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <settings>
     <Jet>
-        <JetConnSerialNo>ZF-WLFS-CMSIS-DAP:80940860-DC5475E0FE88</JetConnSerialNo>
-        <JetConnFoundProbes />
-        <PrevWtdReset>Reset and halt after bootloader</PrevWtdReset>
-        <OnlineReset>Software</OnlineReset>
         <DisableInterrupts>0</DisableInterrupts>
         <LeaveRunning>0</LeaveRunning>
         <MultiCoreRunAll>0</MultiCoreRunAll>
+        <OnlineReset>Software</OnlineReset>
+        <JetConnSerialNo>ZF-WLFS-CMSIS-DAP:80940860-DC5475E0FE88</JetConnSerialNo>
+        <JetConnFoundProbes />
+        <PrevWtdReset>Reset and halt after bootloader</PrevWtdReset>
     </Jet>
     <PlDriver>
-        <FirstRun>0</FirstRun>
         <MemConfigValue>D:\IAR\arm\config\debugger\Infineon\CYT4BB_M7.ddf</MemConfigValue>
+        <FirstRun>0</FirstRun>
     </PlDriver>
     <DebugChecksum>
-        <Checksum>3709157978</Checksum>
+        <Checksum>99073193</Checksum>
     </DebugChecksum>
     <Exceptions>
         <StopOnUncaught>_ 0</StopOnUncaught>
@@ -40,8 +40,8 @@
     <SWOManager>
         <SamplingDivider>8192</SamplingDivider>
         <OverrideClock>0</OverrideClock>
-        <CpuClock>1398101057</CpuClock>
-        <SwoClock>1381319470</SwoClock>
+        <CpuClock>1431585108</CpuClock>
+        <SwoClock>1430466131</SwoClock>
         <DataLogMode>0</DataLogMode>
         <ItmPortsEnabled>63</ItmPortsEnabled>
         <ItmTermIOPorts>1</ItmTermIOPorts>
@@ -84,10 +84,6 @@
         <EventLSU>0</EventLSU>
         <EventSLEEP>0</EventSLEEP>
     </SWOTraceWindow>
-    <TermIOLog>
-        <LoggingEnabled>_ 0</LoggingEnabled>
-        <LogFile>_ ""</LogFile>
-    </TermIOLog>
     <DisassembleMode>
         <mode>0</mode>
     </DisassembleMode>
@@ -95,6 +91,10 @@
         <Bp0>_ 0 "EMUL_CODE" "{$PROJ_DIR$\..\..\code\test\test_nav_ahrs.c}.179.5" 0 0 1 "" 0 "" 0</Bp0>
         <Count>1</Count>
     </Breakpoints2>
+    <TermIOLog>
+        <LoggingEnabled>_ 0</LoggingEnabled>
+        <LogFile>_ ""</LogFile>
+    </TermIOLog>
     <Aliases>
         <Count>0</Count>
         <SuppressDialog>0</SuppressDialog>

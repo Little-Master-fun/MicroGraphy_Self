@@ -1134,12 +1134,6 @@
                 <name>$PROJ_DIR$\..\..\code\control\imu_ahrs_complementary.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\..\code\control\imu_attitude.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\..\code\control\imu_attitude.h</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\..\code\control\motor_control.c</name>
             </file>
             <file>

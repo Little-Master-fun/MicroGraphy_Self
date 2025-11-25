@@ -37,7 +37,7 @@
 #include "zf_common_headfile.h"
 #include "driver_encoder.h"
 #include "motor_control.h"
-#include "imu_attitude.h"
+
 #include "imu_ahrs_complementary.h"
 #include "driver_sch16tk10.h"
 #include "nav_control_ahrs.h"

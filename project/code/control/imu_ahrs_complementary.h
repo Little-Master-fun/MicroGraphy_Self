@@ -139,11 +139,19 @@ ahrs_status_enum ahrs_set_pi_params(float kp, float ki);
  * @return uint8  1-������У׼��ɣ� 0-δ����������У׼��δ��ʼ����
  */
 /**
- * @brief  纯陀螺航向角（度, [-180, 180]）
+ * @brief  获取SCH16TK10纯陀螺航向角（度, [-180, 180]）
  * @param  yaw_deg 陀螺积分航向
  * @return ahrs_status_enum
  */
 ahrs_status_enum ahrs_get_yaw_gyro(float *yaw_deg);
+
+/**
+ * @brief  获取IMU963RA纯陀螺航向角（度, [-180, 180]）
+ * @param  yaw_deg IMU963RA陀螺积分航向
+ * @return ahrs_status_enum
+ */
+ahrs_status_enum ahrs_get_yaw_gyro_imu963ra(float *yaw_deg);
+
 uint8 ahrs_is_ready(void);
 
 #endif /* __IMU_AHRS_COMPLEMENTARY_H_ */

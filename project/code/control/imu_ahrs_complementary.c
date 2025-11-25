@@ -23,6 +23,7 @@
 
 #include "imu_ahrs_complementary.h"
 #include "driver_sch16tk10.h"
+#include "zf_device_imu963ra.h"
 #include "config_infineon.h"
 #include "zf_common_headfile.h"
 #include <stdio.h>
@@ -59,7 +60,8 @@ static ahrs_imu_data_t imu_data = {0};
 static ahrs_pi_controller_t pi_controller = {0};
 
 // 1D Yaw 积分器（纯陀螺积分的航向角）
-static float yaw_gyro = 0.0f;  // 纯陀螺积分的航向角（度）[-180, 180]
+static float yaw_gyro = 0.0f;  // SCH16TK10纯陀螺积分的航向角（度）[-180, 180]
+static float yaw_gyro_imu963ra = 0.0f;  // IMU963RA纯陀螺积分的航向角（度）[-180, 180]
 
 // 调试变量（通过在线调试查看）
 typedef struct {
@@ -89,6 +91,12 @@ typedef struct {
     float    yaw_accumulated_deg;      // 累积偏航角 (度)
     float    yaw_gyro_deg;             // 1D Yaw积分器航向角 (度) [-180, 180]
     
+    // IMU963RA相关字段
+    int16_t  raw_gyro_z_imu963ra;      // IMU963RA陀螺仪Z原始LSB
+    float    gyro_z_dps_imu963ra;      // IMU963RA陀螺仪Z (度/秒)
+    float    gyro_z_rads_imu963ra;     // IMU963RA陀螺仪Z (弧度/秒)
+    float    yaw_gyro_imu963ra_deg;    // IMU963RA 1D Yaw积分器航向角 (度)
+    
     // 转换系数验证
     float    expected_sensitivity;     // 期望的灵敏度 = SENSITIVITY_RATE1 * AVG_FACTOR
     float    actual_conversion_factor; // 实际转换因子
@@ -108,9 +116,11 @@ static uint32 sample_count = 0;
 // 校准相关变量
 static uint32 calibration_count = 0;
 static uint8 system_ready = 0;
+static uint8 system_ready_imu963ra = 0;
 static float gyro_sum_x = 0.0f;
 static float gyro_sum_y = 0.0f;
 static float gyro_sum_z = 0.0f;
+static float gyro_sum_z_imu963ra = 0.0f;  // IMU963RA Z轴校准累加
 
 // PI控制器参数
 static float param_kp = 0.0f;   // 比例增益（可根据需要调整）
@@ -159,9 +169,11 @@ ahrs_status_enum ahrs_complementary_init(void)
     // 初始化校准变量
     calibration_count = 0;
     system_ready = 0;
+    system_ready_imu963ra = 0;
     gyro_sum_x = 0.0f;
     gyro_sum_y = 0.0f;
     gyro_sum_z = 0.0f;
+    gyro_sum_z_imu963ra = 0.0f;
     
     // 初始化航向角处理变量
     yaw_offset = 0.0f;
@@ -170,7 +182,7 @@ ahrs_status_enum ahrs_complementary_init(void)
     
     // 设置PI控制器参数
     param_kp = 0.0f;  // 可以根据实际情况调整
-    param_ki = 0.0f;  // 可以根据实际情况调整
+    param_ki = 0.0f;  
     
     // 初始化SCH16TK10传感器
     printf("正在初始化SCH16TK10传感器...\r\n");
@@ -214,6 +226,21 @@ ahrs_status_enum ahrs_complementary_init(void)
     
     printf("SCH16TK10传感器初始化成功！\r\n");
     
+    // ========== 初始化IMU963RA传感器 ==========
+    printf("正在初始化IMU963RA传感器...\r\n");
+    
+    if (imu963ra_init() != 0)
+    {
+        printf("IMU963RA初始化失败\r\n");
+        // 继续运行，仅使用SCH16TK10
+    }
+    else
+    {
+        printf("IMU963RA传感器初始化成功！\r\n");
+        printf("IMU963RA陀螺仪量程: ±2000dps, 转换因子: 14.3 LSB/dps\r\n");
+    }
+    // ==========================================
+    
     // 读取并验证实际灵敏度配置
     uint16_t actual_sens_rate1, actual_sens_rate2, actual_dec_rate2;
     if (SCH1_getRateSensDec(&actual_sens_rate1, &actual_sens_rate2, &actual_dec_rate2) == SCH1_OK)
@@ -248,7 +275,7 @@ ahrs_status_enum ahrs_complementary_init(void)
     
     ahrs_system.initialized = 1;
     
-    printf("AHRS互补滤波器初始化完成\r\n");
+    printf("双陀螺仪AHRS系统初始化完成\r\n");
     printf("正在进行陀螺仪零偏校准，请保持设备静止...\r\n");
     
     return AHRS_STATUS_OK;
@@ -289,6 +316,11 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
         SCH1_result sensor_data;
         SCH1_convert_data(&raw_data_summed, &sensor_data);
         
+        // ========== 读取IMU963RA数据 ==========
+        imu963ra_get_gyro();  // 读取IMU963RA陀螺仪数据
+        float gyro_z_imu963ra_dps = imu963ra_gyro_transition(imu963ra_gyro_z);  // 转换为度/秒
+        // ======================================
+        
         // 校准阶段
         if(!system_ready)
         {
@@ -300,6 +332,9 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
                 gyro_sum_x += sensor_data.Rate1[AXIS_X];
                 gyro_sum_y += sensor_data.Rate1[AXIS_Y];
                 gyro_sum_z += sensor_data.Rate1[AXIS_Z];
+                
+                // 累积IMU963RA的Z轴零偏
+                gyro_sum_z_imu963ra += gyro_z_imu963ra_dps;
             }
             
             // 计算零偏平均值
@@ -309,23 +344,27 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
                 gyro_offset.y = gyro_sum_y / GYRO_CALIB_SAMPLES;
                 gyro_offset.z = gyro_sum_z / GYRO_CALIB_SAMPLES;
                 
-                printf("陀螺仪零偏校准完成:\r\n");
-                printf("  X轴偏移: %.6f dps\r\n", gyro_offset.x);
-                printf("  Y轴偏移: %.6f dps\r\n", gyro_offset.y);
-                printf("  Z轴偏移: %.6f dps\r\n", gyro_offset.z);
+                // 计算IMU963RA零偏
+                float gyro_offset_z_imu963ra = gyro_sum_z_imu963ra / GYRO_CALIB_SAMPLES;
+                
+                
+                // 保存IMU963RA零偏到调试结构体
+                g_ahrs_debug.gyro_z_dps_imu963ra = gyro_offset_z_imu963ra;  // 临时存储
             }
             
             // 系统准备就绪
             if(calibration_count > GYRO_READY_COUNT)
             {
                 system_ready = 1;
+                system_ready_imu963ra = 1;
                 
-                // 初始化1D Yaw积分器：对齐到四元数算出的yaw
-                // 在校准结束后，四元数应该已经有了初始姿态
+                // 初始化两个1D Yaw积分器：对齐到四元数算出的yaw
                 yaw_gyro = euler_angles.yaw;
+                yaw_gyro_imu963ra = euler_angles.yaw;
                 
-                printf("AHRS系统准备就绪，开始姿态解算\r\n");
-                printf("1D Yaw积分器已初始化为: %.2f度\r\n", yaw_gyro);
+                printf("双陀螺仪AHRS系统准备就绪，开始姿态解算\r\n");
+                printf("SCH16TK10 1D Yaw积分器已初始化为: %.2f度\r\n", yaw_gyro);
+                printf("IMU963RA  1D Yaw积分器已初始化为: %.2f度\r\n", yaw_gyro_imu963ra);
             }
         }
         else
@@ -333,7 +372,7 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
             // 正常工作阶段：获取传感器数据并更新姿态
             ahrs_get_sensor_values(&sensor_data);
             
-            // ========== 1D Yaw 积分器更新 ==========
+            // ========== SCH16TK10 1D Yaw 积分器更新 ==========
             // imu_data.gyro_z 已经在 ahrs_get_sensor_values 中被赋值（单位：rad/s）
             // 积分到度：gyro_z (rad/s) * (180/π) * dt
             // 注意：实测发现需要将 DELTA_T 乘以 2，可能是因为实际更新周期为 4ms
@@ -344,7 +383,29 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
                 yaw_gyro -= 360.0f;
             else if (yaw_gyro < -180.0f)
                 yaw_gyro += 360.0f;
-            // ========================================
+            // =================================================
+            
+            // ========== IMU963RA 1D Yaw 积分器更新 ==========
+            // 零偏补偿（使用校准时保存的零偏）
+            float gyro_z_imu963ra_compensated = gyro_z_imu963ra_dps - g_ahrs_debug.gyro_z_dps_imu963ra;
+            
+            // 转换为弧度/秒
+            float gyro_z_imu963ra_rads = gyro_z_imu963ra_compensated * DEG_TO_RAD;
+            
+            // 积分到度
+            yaw_gyro_imu963ra += gyro_z_imu963ra_rads * (180.0f / AHRS_PI) * DELTA_T * 2.0f;
+            
+            // 归一化到 [-180, 180] 度
+            if (yaw_gyro_imu963ra > 180.0f)
+                yaw_gyro_imu963ra -= 360.0f;
+            else if (yaw_gyro_imu963ra < -180.0f)
+                yaw_gyro_imu963ra += 360.0f;
+            
+            // 更新调试信息
+            g_ahrs_debug.raw_gyro_z_imu963ra = imu963ra_gyro_z;
+            g_ahrs_debug.gyro_z_rads_imu963ra = gyro_z_imu963ra_rads;
+            g_ahrs_debug.yaw_gyro_imu963ra_deg = yaw_gyro_imu963ra;
+            // =================================================
             
             // 更新调试信息
             g_ahrs_debug.update_count++;
@@ -436,7 +497,7 @@ ahrs_status_enum ahrs_get_gyro_offset(ahrs_gyro_offset_t *offset)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     重置航向角零点
+// 函数简介     重置航向角零点（双陀螺仪）
 // 参数说明     无
 // 返回参数     状态
 //-------------------------------------------------------------------------------------------------------------------
@@ -446,15 +507,16 @@ ahrs_status_enum ahrs_reset_yaw(void)
     direction_change = 0;
     last_yaw = euler_angles.yaw;
     
-    // 同时重置1D Yaw积分器
+    // 重置两个1D Yaw积分器
     yaw_gyro = 0.0f;
+    yaw_gyro_imu963ra = 0.0f;
     
-    printf("航向角已重置（包括1D Yaw积分器）\r\n");
+    printf("双陀螺仪航向角已重置\r\n");
     return AHRS_STATUS_OK;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// 函数简介     获取纯陀螺积分的航向角（1D Yaw积分器）
+// 函数简介     获取纯陀螺积分的航向角（SCH16TK10 1D Yaw积分器）
 // 参数说明     yaw_deg         航向角输出指针（度）
 // 返回参数     状态
 // 备注信息     此航向角仅由陀螺仪Z轴积分得到，用于平面导航和转向控制
@@ -465,6 +527,21 @@ ahrs_status_enum ahrs_get_yaw_gyro(float *yaw_deg)
         return AHRS_STATUS_ERROR;
     
     *yaw_deg = yaw_gyro;
+    return AHRS_STATUS_OK;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     获取IMU963RA纯陀螺积分的航向角（IMU963RA 1D Yaw积分器）
+// 参数说明     yaw_deg         航向角输出指针（度）
+// 返回参数     状态
+// 备注信息     此航向角仅由IMU963RA陀螺仪Z轴积分得到
+//-------------------------------------------------------------------------------------------------------------------
+ahrs_status_enum ahrs_get_yaw_gyro_imu963ra(float *yaw_deg)
+{
+    if(!system_ready_imu963ra || yaw_deg == NULL)
+        return AHRS_STATUS_ERROR;
+    
+    *yaw_deg = yaw_gyro_imu963ra;
     return AHRS_STATUS_OK;
 }
 

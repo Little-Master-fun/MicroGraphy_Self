@@ -9,7 +9,7 @@
 ********************************************************************************************************************/
 
 #include "test_nav.h"
-#include "nav_control.h"
+
 #include "zf_device_ips114.h"
 #include "zf_common_headfile.h"
 #include <stdio.h>

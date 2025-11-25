@@ -79,6 +79,55 @@ typedef struct
     uint32 update_count;        // ���´�������
 } ahrs_system_t;
 
+// ���Խṹ��������������ݼ�¼��ʹ�ã�
+typedef struct {
+    // ��������������Ϣ
+    uint16 actual_sens_rate1;        // ʵ��������������ȱ�Rate1
+    uint16 actual_sens_rate2;        // ʵ��������������ȱ�Rate2
+    uint16 actual_dec_rate2;         // ʵ����������ȡ��
+    float  config_sens_rate1;        // ���������ı�����
+    
+    // ԭʼLSB���ݣ��ۼӺ�
+    int32  raw_gyro_x;               // �����ǫXԭʼLSB
+    int32  raw_gyro_y;               // �����ǫYԭʼLSB
+    int32  raw_gyro_z;               // �����ǫZԭʼLSB
+    
+    // ת��������������
+    float  gyro_x_dps;               // �����ǫX (��/��)
+    float  gyro_y_dps;               // �����ǫY (��/��)
+    float  gyro_z_dps;               // �����ǫZ (��/��)
+    float  gyro_x_rads;              // �����ǫX (����/��)
+    float  gyro_y_rads;              // �����ǫY (����/��)
+    float  gyro_z_rads;              // �����ǫZ (����/��)
+    
+    // ��̬��
+    float  pitch_deg;                // ������ (��)
+    float  roll_deg;                 // ������ (��)
+    float  yaw_deg;                  // ƫ���� (��)
+    float  yaw_accumulated_deg;      // �ۻ�ƫ���� (��)
+    float  yaw_gyro_deg;             // 1D Yaw������������ (��) [-180, 180]
+    
+    // IMU963RA����ֶ�
+    int16  raw_gyro_z_imu963ra;      // IMU963RA�����ǫZԭʼLSB
+    float  gyro_z_dps_imu963ra;      // IMU963RA�����ǫZ (��/��)
+    float  gyro_z_rads_imu963ra;     // IMU963RA�����ǫZ (����/��)
+    float  yaw_gyro_imu963ra_deg;    // IMU963RA 1D Yaw������������ (��)
+    
+    // ��������Ϣ������SCH16TK10��
+    float  sch_temp_deg;             // SCH16TK10���²��� (��C)
+    
+    // ת��ϵ����֤
+    float  expected_sensitivity;     // �ڿ�İ����� = SENSITIVITY_RATE1 * AVG_FACTOR
+    float  actual_conversion_factor; // ʵ��ת������
+    
+    // �����������
+    uint32 update_count;             // ��̬����������
+    
+} ahrs_debug_info_t;
+
+// �����������Ա������鿴
+extern ahrs_debug_info_t g_ahrs_debug;
+
 //=================================================�ⲿ��������================================================
 
 /**

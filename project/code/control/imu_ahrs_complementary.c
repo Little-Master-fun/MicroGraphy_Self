@@ -63,50 +63,7 @@ static ahrs_pi_controller_t pi_controller = {0};
 static float yaw_gyro = 0.0f;  // SCH16TK10纯陀螺积分的航向角（度）[-180, 180]
 static float yaw_gyro_imu963ra = 0.0f;  // IMU963RA纯陀螺积分的航向角（度）[-180, 180]
 
-// 调试变量（通过在线调试查看）
-typedef struct {
-    // 传感器配置信息
-    uint16_t actual_sens_rate1;        // 实际配置的灵敏度Rate1
-    uint16_t actual_sens_rate2;        // 实际配置的灵敏度Rate2
-    uint16_t actual_dec_rate2;         // 实际配置的抽取率
-    float    config_sens_rate1;        // 代码中配置的灵敏度
-    
-    // 原始LSB数据（累加后）
-    int32_t  raw_gyro_x;               // 陀螺仪X原始LSB
-    int32_t  raw_gyro_y;               // 陀螺仪Y原始LSB
-    int32_t  raw_gyro_z;               // 陀螺仪Z原始LSB
-    
-    // 转换后的物理量
-    float    gyro_x_dps;               // 陀螺仪X (度/秒)
-    float    gyro_y_dps;               // 陀螺仪Y (度/秒)
-    float    gyro_z_dps;               // 陀螺仪Z (度/秒)
-    float    gyro_x_rads;              // 陀螺仪X (弧度/秒)
-    float    gyro_y_rads;              // 陀螺仪Y (弧度/秒)
-    float    gyro_z_rads;              // 陀螺仪Z (弧度/秒)
-    
-    // 姿态角
-    float    pitch_deg;                // 俯仰角 (度)
-    float    roll_deg;                 // 滚转角 (度)
-    float    yaw_deg;                  // 偏航角 (度)
-    float    yaw_accumulated_deg;      // 累积偏航角 (度)
-    float    yaw_gyro_deg;             // 1D Yaw积分器航向角 (度) [-180, 180]
-    
-    // IMU963RA相关字段
-    int16_t  raw_gyro_z_imu963ra;      // IMU963RA陀螺仪Z原始LSB
-    float    gyro_z_dps_imu963ra;      // IMU963RA陀螺仪Z (度/秒)
-    float    gyro_z_rads_imu963ra;     // IMU963RA陀螺仪Z (弧度/秒)
-    float    yaw_gyro_imu963ra_deg;    // IMU963RA 1D Yaw积分器航向角 (度)
-    
-    // 转换系数验证
-    float    expected_sensitivity;     // 期望的灵敏度 = SENSITIVITY_RATE1 * AVG_FACTOR
-    float    actual_conversion_factor; // 实际转换因子
-    
-    // 更新计数
-    uint32_t update_count;             // 姿态更新计数器
-    
-} ahrs_debug_info_t;
-
-// 声明为全局变量以便调试器查看
+// 调试变量全局实例（类型定义在头文件中）
 ahrs_debug_info_t g_ahrs_debug = {0};
 
 // 传感器数据累加缓冲区（用于AVG_FACTOR次采样平均）
@@ -424,6 +381,9 @@ ahrs_status_enum ahrs_complementary_update(SCH1_raw_data *raw_data)
             g_ahrs_debug.gyro_x_rads = imu_data.gyro_x;
             g_ahrs_debug.gyro_y_rads = imu_data.gyro_y;
             g_ahrs_debug.gyro_z_rads = imu_data.gyro_z;
+            
+            // 记录温度数据
+            g_ahrs_debug.sch_temp_deg = sensor_data.Temp;
             
             // 计算实际转换因子（从LSB到dps）
             if(g_ahrs_debug.gyro_z_dps != 0)

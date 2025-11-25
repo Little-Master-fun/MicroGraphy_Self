@@ -40,6 +40,7 @@
 #include "motor_control.h"
 #include "imu_ahrs_complementary.h"
 #include "dual_core_comm.h"
+#include "imu_data_logger.h"
 
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -70,6 +71,7 @@ int main(void)
     //  初始化电机控制
     motor_pid_init();
     motor_init();
+    imu_logger_init();
     
     //  初始化编码器
     encoder_init();
@@ -77,7 +79,12 @@ int main(void)
     //  初始化AHRS姿态解算
     ahrs_complementary_init();
     
-    
+    // 设置为"仅无线实时发送"模式
+    imu_logger_set_mode(1);  
+
+    // 启动记录
+    imu_logger_start();
+
     //  延时等待IMU稳定
     system_delay_ms(1000);
     
@@ -88,12 +95,20 @@ int main(void)
     pit_ms_init(PIT_CH1, 2);  // 电机控制 (2ms)
     pit_ms_init(PIT_CH0, 5);  // 数据共享 (5ms)
     
+    
     // 主循环
     while(true)
     {
 
         
-        system_delay_ms(100);
+        // 读取左右轮速度 
+        float left_speed = encoder_get_speed(ENCODER_ID_LEFT);
+        float right_speed = encoder_get_speed(ENCODER_ID_RIGHT);
+        
+        // 更新数据记录器
+        imu_logger_update(left_speed, right_speed);
+        
+        system_delay_ms(100);  // 10Hz采样率
     }
 }
 

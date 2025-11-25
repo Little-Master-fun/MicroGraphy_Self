@@ -156,4 +156,71 @@ uint32 imu_logger_get_buffer_count(void);
  */
 uint32 imu_logger_get_flash_count(void);
 
+//=================================================无线串口传输接口================================================
+
+/**
+ * @brief  使能/禁用无线串口实时传输
+ * @param  enable  1-使能，0-禁用
+ */
+void imu_logger_wireless_enable(uint8 enable);
+
+/**
+ * @brief  通过无线串口发送CSV表头
+ */
+void imu_logger_wireless_send_header(void);
+
+/**
+ * @brief  通过无线串口发送单条数据记录
+ * @param  data  数据记录指针
+ */
+void imu_logger_wireless_send_record(const imu_training_data_t *data);
+
+/**
+ * @brief  通过无线串口批量发送缓冲区数据
+ * @param  start_index  起始索引
+ * @param  count        发送数量（0表示全部）
+ * @return uint32       实际发送的数量
+ */
+uint32 imu_logger_wireless_send_buffer(uint32 start_index, uint32 count);
+
+/**
+ * @brief  通过无线串口批量发送Flash数据
+ * @param  start_index  起始索引
+ * @param  count        发送数量（0表示全部）
+ * @return uint32       实际发送的数量
+ */
+uint32 imu_logger_wireless_send_flash(uint32 start_index, uint32 count);
+
+/**
+ * @brief  获取无线传输状态
+ * @return uint8  1-传输使能，0-传输禁用
+ */
+uint8 imu_logger_wireless_is_enabled(void);
+
+/**
+ * @brief  获取无线传输计数
+ * @return uint32  已传输的记录数
+ */
+uint32 imu_logger_wireless_get_count(void);
+
+//=================================================Flash存储控制接口================================================
+
+/**
+ * @brief  使能/禁用Flash存储
+ * @param  enable  1-使能，0-禁用
+ */
+void imu_logger_flash_enable(uint8 enable);
+
+/**
+ * @brief  获取Flash存储状态
+ * @return uint8  1-已使能，0-已禁用
+ */
+uint8 imu_logger_flash_is_enabled(void);
+
+/**
+ * @brief  设置数据记录模式
+ * @param  mode  0-仅Flash, 1-仅无线, 2-同时使用
+ */
+void imu_logger_set_mode(uint8 mode);
+
 #endif // _IMU_DATA_LOGGER_H_

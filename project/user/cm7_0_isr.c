@@ -61,6 +61,8 @@ void pit0_ch1_isr()                     // 定时器通道 1 周期中断服务函数     2ms
 {
     pit_isr_flag_clear(PIT_CH1);
     
+    // 更新编码器数据（2ms周期，与ENCODER_SAMPLE_TIME一致）
+    encoder_update();
     
     dual_core_read_control_data();
     

@@ -79,7 +79,7 @@ int main(void)
     //  初始化AHRS姿态解算
     ahrs_complementary_init();
     
-    // 设置为"仅无线实时发送"模式
+    // 用无线
     imu_logger_set_mode(1);  
 
     // 启动记录

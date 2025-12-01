@@ -28,7 +28,7 @@
 
 # IAR workspace / user settings（可选保留项目文件 .ewp，忽略用户/临时工作区）
 *.eww.user
-*.eww
+# *.eww
 
 # 临时/编辑器文件
 *~

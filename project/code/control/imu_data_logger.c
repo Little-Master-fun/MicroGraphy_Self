@@ -87,13 +87,6 @@ imu_log_status_enum imu_logger_init(void)
     
     logger_initialized = 1;
     
-    printf("\r\n===========================================\r\n");
-    printf("IMU数据记录器初始化完成\r\n");
-    printf("缓冲区大小: %d条记录\r\n", IMU_LOG_BUFFER_SIZE);
-    printf("单条记录大小: %u字节\r\n", (unsigned int)sizeof(imu_training_data_t));
-    printf("采样率: %dms (50Hz)\r\n", IMU_LOG_SAMPLE_RATE_MS);
-    printf("Flash已有记录: %u条\r\n", flash_record_count);
-    printf("===========================================\r\n\r\n");
     
     return IMU_LOG_STATUS_OK;
 }
@@ -168,7 +161,6 @@ imu_log_status_enum imu_logger_update(float left_speed, float right_speed)
     data->power_on_time_s = system_time_ms / 1000;
     
     // ========== 获取SCH16TK10数据 ==========
-    // 从AHRS系统获取已处理的数据
     
     // 温度信息
     data->temperature_deg = g_ahrs_debug.sch_temp_deg;  // 需要在AHRS中添加温度字段

@@ -185,7 +185,6 @@ static float motor_pid_calculate(motor_pid_controller_t *pid, float target, floa
     // 计算当前误差
     float error = -target + current;
     
-    // ========== 增量式PI控制算法 ==========
     // 增量式PI控制公式: Δu(k) = Kp * [e(k) - e(k-1)] + Ki * e(k)
     // 其中: e(k)为当前误差, e(k-1)为上次误差
     

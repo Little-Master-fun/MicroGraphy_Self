@@ -97,10 +97,10 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return NAV_AHRS_STATUS_ERROR;
     }
     
-    // 1. 检查AHRS校准状态（从共享内存读取）
+    // 检查AHRS校准状态（从共享内存读取）
     SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
     
-    // 1.1 如果AHRS尚未校准完成，等待
+    // 如果AHRS尚未校准完成，等待
     if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
         nav_ahrs.left_speed = 0.0f;
         nav_ahrs.right_speed = 0.0f;
@@ -116,14 +116,14 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return NAV_AHRS_STATUS_WAITING_CALIB;
     }
     
-    // 1.2 AHRS校准完成，开始稳定等待计数
+    // AHRS校准完成，开始稳定等待计数
     if (!nav_ahrs.ahrs_calibration_done) {
         nav_ahrs.ahrs_calibration_done = 1;
         nav_ahrs.stable_wait_counter = 0;
         printf("[NAV_AHRS] 陀螺仪校准完成，开始稳定等待 %d ms...\r\n", NAV_AHRS_STABLE_WAIT_TIME_MS);
     }
     
-    // 1.3 如果还在稳定等待期，继续等待
+    // 如果还在稳定等待期，继续等待
     if (!nav_ahrs.ready_to_start) {
         nav_ahrs.stable_wait_counter++;
         
@@ -145,7 +145,7 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         }
     }
     
-    // 2. 系统已准备就绪，检查运行模式
+    // 系统已准备就绪，检查运行模式(怪哉)
     //if (nav_ahrs.mode != NAV_AHRS_MODE_REPLAY) {
     //    // 非回放模式，停车
     //    nav_ahrs.left_speed = 0.0f;
@@ -153,7 +153,7 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     //    return NAV_AHRS_STATUS_OK;
     //}
     
-    // 1. 更新当前状态（里程、航向角）
+    // 更新当前状态（里程、航向角）
     nav_ahrs_status_enum status = nav_ahrs_update_state();
     if (status != NAV_AHRS_STATUS_OK) {
         // 状态更新失败（例如yaw为NaN，正在校准），停止导航
@@ -163,19 +163,19 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return status;
     }
     
-    // 2. 查找前瞻点
+    // 查找前瞻点
     nav_ahrs_find_lookahead_point();
     
-    // 3. 计算路径曲率
+    // 计算路径曲率
     nav_ahrs.curvature = nav_ahrs_calculate_curvature(nav_ahrs.lookahead_index);
     
-    // 4. 角度PID控制
+    //  角度PID控制
     nav_ahrs_angle_pid_control();
     
-    // 5. 计算的目标速度会通过共享内存发送给CM7_0
+    // 计算的目标速度会通过共享内存发送给CM7_0
     // CM7_0会调用motor_set_target_speed(nav_ahrs.left_speed, nav_ahrs.right_speed);
     
-    // 6. 检查是否完成一圈
+    // 检查是否完成一圈
     if (nav_ahrs.path.current_index >= nav_ahrs.path.total_points - 1) {
         if (nav_ahrs.path.loop_mode) {
             // 循环模式，重置到起点
@@ -183,33 +183,14 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
             
             // 重置距离基准为当前累积距离
             nav_ahrs.previous_distance = shared_core0_data.distance;
-            
-            // 重新计算相对距离（应该接近0）
             nav_ahrs.current_distance = 0.0f;  // 强制设为0，避免累积误差
-            
-            // 重置索引到起点
             nav_ahrs.path.current_index = 0;
-            
-            // 重置前瞻点索引
             nav_ahrs.lookahead_index = 0;
-            
-            // 重置PID积分项，避免上一圈的积分影响
             nav_ahrs.pid_turn.integral = 0.0f;
             nav_ahrs.pid_straight.integral = 0.0f;
-            
-            // 重置PID的上一次误差
             nav_ahrs.pid_turn.error_last = 0.0f;
             nav_ahrs.pid_straight.error_last = 0.0f;
             
-            printf("[NAV_AHRS] 循环重启完成 (index: %d, 距离重置为: %.1f mm)\n", 
-                   nav_ahrs.path.current_index, nav_ahrs.current_distance);
-            
-            // 添加额外的调试信息
-            printf("[NAV_AHRS] 重启后状态检查:\n");
-            printf("  - previous_distance: %.1f mm\n", nav_ahrs.previous_distance);
-            printf("  - shared_distance: %.1f mm\n", shared_core0_data.distance);
-            printf("  - lookahead_index: %d\n", nav_ahrs.lookahead_index);
-            printf("  - total_points: %d\n", nav_ahrs.path.total_points);
         } else {
             // 非循环模式，停车
             nav_ahrs.mode = NAV_AHRS_MODE_IDLE;
@@ -248,13 +229,13 @@ nav_ahrs_status_enum nav_ahrs_set_mode(nav_ahrs_mode_enum mode)
         // 同步DCache，确保读取到最新数据
         SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
         
-        // 1. 检查AHRS是否校准完成
+        // 检查AHRS是否校准完成
         if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
             printf("[NAV_AHRS] 无法启动导航：陀螺仪正在校准，请等待校准完成\r\n");
             return NAV_AHRS_STATUS_WAITING_CALIB;
         }
         
-        // 2. 检查是否完成稳定等待
+        // 检查是否完成稳定等待
         if (!nav_ahrs.ready_to_start) {
             printf("[NAV_AHRS] 无法启动导航：系统正在稳定等待中 (%d/%d ms)\r\n", 
                    nav_ahrs.stable_wait_counter * NAV_AHRS_UPDATE_PERIOD_MS,
@@ -262,7 +243,7 @@ nav_ahrs_status_enum nav_ahrs_set_mode(nav_ahrs_mode_enum mode)
             return NAV_AHRS_STATUS_WAITING_STABLE;
         }
         
-        // 3. 检查yaw是否为NaN
+        // 检查yaw是否为NaN
         if (isnan(shared_core0_data.yaw)) {
             printf("[NAV_AHRS] 无法启动导航：yaw为NaN，AHRS状态异常\r\n");
             return NAV_AHRS_STATUS_ERROR;
@@ -361,15 +342,15 @@ nav_ahrs_status_enum nav_ahrs_set_pid(uint8 is_turn, float kp, float ki, float k
 //-------------------------------------------------------------------------------------------------------------------
 static nav_ahrs_status_enum nav_ahrs_update_state(void)
 {
-    // 1. 同步DCache，确保读取到RAM中的最新数据
+    // 同步DCache，确保读取到RAM中的最新数据
     SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
     
-    // 2. 检查数据有效性
+    // 检查数据有效性
     if (!shared_core0_data.data_valid) {
         return NAV_AHRS_STATUS_ERROR;
     }
     
-    // 3. 检查yaw是否为NaN - 如果是NaN说明正在静止记录偏置（校准中）
+    // 检查yaw是否为NaN - 如果是NaN说明正在静止记录偏置（校准中）
     if (isnan(shared_core0_data.yaw)) {
         // yaw为NaN，AHRS正在校准陀螺仪偏置，导航不启动
         static uint8 nan_warning_printed = 0;
@@ -380,13 +361,13 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
         return NAV_AHRS_STATUS_ERROR;
     }
     
-    // 4. 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
+    // 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
     nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance;  // 单位: mm
     
-    // 5. 获取当前航向角 - 从共享内存
+    // 获取当前航向角 - 从共享内存
     nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
     
-    // 6. 更新当前路径点索引
+    // 更新当前路径点索引
     // 从当前索引开始向后查找，找到第一个距离大于等于当前距离的点
     uint8 index_updated = 0;
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {
@@ -492,10 +473,10 @@ static float nav_ahrs_calculate_curvature(uint16 idx)
 //-------------------------------------------------------------------------------------------------------------------
 static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
 {
-    // 1. 计算角度误差
+    // 计算角度误差
     nav_ahrs.angle_error = nav_ahrs_angle_difference(nav_ahrs.target_yaw, nav_ahrs.current_yaw);
     
-    // 2. 根据误差大小选择PID控制器
+    // 根据误差大小选择PID控制器
     nav_ahrs_pid_t *pid;
     if (fabs(nav_ahrs.angle_error) > 20.0f) {
         // 大误差，使用转弯PID
@@ -505,7 +486,7 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
         pid = &nav_ahrs.pid_straight;
     }
     
-    // 3. PID计算
+    // PID计算
     pid->error = nav_ahrs.angle_error;
     
     // 积分项
@@ -523,7 +504,7 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
     
     pid->error_last = pid->error;
     
-    // 4. 计算左右轮速度
+    // 计算左右轮速度
     float direction_adjust = pid->output * 0.01f;  // PID输出缩放到速度调整量 (m/s)
     
     nav_ahrs.left_speed = nav_ahrs.base_speed - direction_adjust;

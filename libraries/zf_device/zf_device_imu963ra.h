@@ -71,14 +71,14 @@
 
 //====================================================硬件 SPI 驱动====================================================
 #define IMU963RA_SPI_SPEED                          (10 * 1000 * 1000)          // 硬件 SPI 速率
-#define IMU963RA_SPI                                (SPI_2           )          // 硬件 SPI 号
-#define IMU963RA_SPC_PIN                            (SPI2_CLK_P15_2  )   		// 硬件 SPI SCK 引脚
-#define IMU963RA_SDI_PIN                            (SPI2_MOSI_P15_1 )      	// 硬件 SPI MOSI 引脚
-#define IMU963RA_SDO_PIN                            (SPI2_MISO_P15_0 )     		// 硬件 SPI MISO 引脚
+#define IMU963RA_SPI                                (SPI_4           )          // 硬件 SPI 号（与SCH16TK10共用SPI_4）
+#define IMU963RA_SPC_PIN                            (SPI4_CLK_P07_2  )   		// 硬件 SPI SCK 引脚（与SCH16TK10共用）
+#define IMU963RA_SDI_PIN                            (SPI4_MOSI_P07_1 )      	// 硬件 SPI MOSI 引脚（与SCH16TK10共用）
+#define IMU963RA_SDO_PIN                            (SPI4_MISO_P07_0 )     		// 硬件 SPI MISO 引脚（与SCH16TK10共用）
 //====================================================硬件 SPI 驱动====================================================
 #endif
 
-#define IMU963RA_CS_PIN                             (P15_3)                    	// CS 片选引脚
+#define IMU963RA_CS_PIN                             (P12_3)                    	// CS 片选引脚（独立片选）
 #define IMU963RA_CS(x)                              (x? (gpio_high(IMU963RA_CS_PIN)): (gpio_low(IMU963RA_CS_PIN)))
 
 typedef enum

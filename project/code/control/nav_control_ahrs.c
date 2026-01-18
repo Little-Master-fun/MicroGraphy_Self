@@ -91,15 +91,8 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return NAV_AHRS_STATUS_ERROR;
     }
     
-<<<<<<< HEAD
     // AHRS校准
     SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
-=======
-    // 检查AHRS校准状态（从共享内存读取）
-    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
-    
-    // 如果AHRS尚未校准完成，等待
->>>>>>> dev
     if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
         nav_ahrs.left_speed = 0.0f;
         nav_ahrs.right_speed = 0.0f;
@@ -114,20 +107,12 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         return NAV_AHRS_STATUS_WAITING_CALIB;
     }
     
-<<<<<<< HEAD
     // AHRS校准完成
-=======
-    // AHRS校准完成，开始稳定等待计数
->>>>>>> dev
     if (!nav_ahrs.ahrs_calibration_done) {
         nav_ahrs.ahrs_calibration_done = 1;
         nav_ahrs.stable_wait_counter = 0;
     }
     
-<<<<<<< HEAD
-=======
-    // 如果还在稳定等待期，继续等待
->>>>>>> dev
     if (!nav_ahrs.ready_to_start) {
         nav_ahrs.stable_wait_counter++;
         
@@ -141,11 +126,7 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
         }
     }
     
-<<<<<<< HEAD
-    // 检查运行模式（怪哉）
-=======
-    // 系统已准备就绪，检查运行模式(怪哉)
->>>>>>> dev
+    // 检查运行模式（怪哉,可能哪部分逻辑写错了）
     //if (nav_ahrs.mode != NAV_AHRS_MODE_REPLAY) {
     //    // 非回放模式就停车
     //    nav_ahrs.left_speed = 0.0f;
@@ -153,11 +134,7 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     //    return NAV_AHRS_STATUS_OK;
     //}
     
-<<<<<<< HEAD
     // 更新状态
-=======
-    // 更新当前状态（里程、航向角）
->>>>>>> dev
     nav_ahrs_status_enum status = nav_ahrs_update_state();
     if (status != NAV_AHRS_STATUS_OK) {
         nav_ahrs.left_speed = 0.0f;
@@ -171,42 +148,24 @@ nav_ahrs_status_enum nav_ahrs_update(float dt)
     // 计算路径曲率
     nav_ahrs.curvature = nav_ahrs_calculate_curvature(nav_ahrs.lookahead_index);
     
-<<<<<<< HEAD
     // 角度PID控制
     nav_ahrs_angle_pid_control();
     
     // 计算的目标速度会通过共享内存发送给CM7_0
     
     // 循环检查
-=======
-    //  角度PID控制
-    nav_ahrs_angle_pid_control();
-    
-    // 计算的目标速度会通过共享内存发送给CM7_0
-    // CM7_0会调用motor_set_target_speed(nav_ahrs.left_speed, nav_ahrs.right_speed);
-    
-    // 检查是否完成一圈
->>>>>>> dev
     if (nav_ahrs.path.current_index >= nav_ahrs.path.total_points - 1) {
         if (nav_ahrs.path.loop_mode) {
             // 循环模式，重置到起点
             
             nav_ahrs.previous_distance = shared_core0_data.distance;
-<<<<<<< HEAD
             nav_ahrs.current_distance = 0.0f;  
-=======
-            nav_ahrs.current_distance = 0.0f;  // 强制设为0，避免累积误差
->>>>>>> dev
             nav_ahrs.path.current_index = 0;
             nav_ahrs.lookahead_index = 0;
             nav_ahrs.pid_turn.integral = 0.0f;
             nav_ahrs.pid_straight.integral = 0.0f;
             nav_ahrs.pid_turn.error_last = 0.0f;
             nav_ahrs.pid_straight.error_last = 0.0f;
-<<<<<<< HEAD
-=======
-            
->>>>>>> dev
         } else {
             // 非循环模式，停车
             nav_ahrs.mode = NAV_AHRS_MODE_IDLE;
@@ -241,31 +200,16 @@ nav_ahrs_status_enum nav_ahrs_set_mode(nav_ahrs_mode_enum mode)
     // 如果要进入回放模式，先进行一系列检查
     if (mode == NAV_AHRS_MODE_REPLAY) {
         SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
-<<<<<<< HEAD
-=======
-        
-        // 检查AHRS是否校准完成
->>>>>>> dev
         if (!shared_core0_data.ahrs_ready || !shared_core0_data.gyro_calibrated) {
             printf("[NAV_AHRS] 无法启动导航：陀螺仪正在校准，请等待校准完成\r\n");
             return NAV_AHRS_STATUS_WAITING_CALIB;
         }
-<<<<<<< HEAD
-=======
-        
-        // 检查是否完成稳定等待
->>>>>>> dev
         if (!nav_ahrs.ready_to_start) {
             printf("[NAV_AHRS] 无法启动导航：系统正在稳定等待中 (%d/%d ms)\r\n", 
                    nav_ahrs.stable_wait_counter * NAV_AHRS_UPDATE_PERIOD_MS,
                    NAV_AHRS_STABLE_WAIT_TIME_MS);
             return NAV_AHRS_STATUS_WAITING_STABLE;
         }
-<<<<<<< HEAD
-=======
-        
-        // 检查yaw是否为NaN
->>>>>>> dev
         if (isnan(shared_core0_data.yaw)) {
             printf("[NAV_AHRS] 无法启动导航：yaw为NaN，AHRS状态异常\r\n");
             return NAV_AHRS_STATUS_ERROR;
@@ -355,11 +299,7 @@ nav_ahrs_status_enum nav_ahrs_set_pid(uint8 is_turn, float kp, float ki, float k
 //-------------------------------------------------------------------------------------------------------------------
 static nav_ahrs_status_enum nav_ahrs_update_state(void)
 {
-<<<<<<< HEAD
     // 同步DCache
-=======
-    // 同步DCache，确保读取到RAM中的最新数据
->>>>>>> dev
     SCB_CleanInvalidateDCache_by_Addr((uint32_t*)&shared_core0_data, sizeof(core0_to_core1_data_t));
     
     // 检查数据有效性
@@ -367,10 +307,6 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
         return NAV_AHRS_STATUS_ERROR;
     }
     
-<<<<<<< HEAD
-=======
-    // 检查yaw是否为NaN - 如果是NaN说明正在静止记录偏置（校准中）
->>>>>>> dev
     if (isnan(shared_core0_data.yaw)) {
         // yaw为NaN，AHRS正在校准陀螺仪偏置，导航不启动
         static uint8 nan_warning_printed = 0;
@@ -382,16 +318,6 @@ static nav_ahrs_status_enum nav_ahrs_update_state(void)
     nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance; 
     nav_ahrs.current_yaw = shared_core0_data.yaw;
     
-<<<<<<< HEAD
-=======
-    // 直接从共享内存获取累积距离（CM7_0的encoder_update()已计算）
-    nav_ahrs.current_distance = shared_core0_data.distance - nav_ahrs.previous_distance;  // 单位: mm
-    
-    // 获取当前航向角 - 从共享内存
-    nav_ahrs.current_yaw = shared_core0_data.yaw;  // 使用CM7_0计算的航向角
-    
-    // 更新当前路径点索引
->>>>>>> dev
     // 从当前索引开始向后查找，找到第一个距离大于等于当前距离的点
     uint8 index_updated = 0;
     for (uint16 i = nav_ahrs.path.current_index; i < nav_ahrs.path.total_points; i++) {
@@ -500,11 +426,7 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
     // 计算角度误差
     nav_ahrs.angle_error = nav_ahrs_angle_difference(nav_ahrs.target_yaw, nav_ahrs.current_yaw);
     
-<<<<<<< HEAD
     // 用误差大小选择PID控制器
-=======
-    // 根据误差大小选择PID控制器
->>>>>>> dev
     nav_ahrs_pid_t *pid;
     if (fabs(nav_ahrs.angle_error) > 20.0f) {
         pid = &nav_ahrs.pid_turn;
@@ -512,10 +434,6 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
         pid = &nav_ahrs.pid_straight;
     }
     
-<<<<<<< HEAD
-=======
-    // PID计算
->>>>>>> dev
     pid->error = nav_ahrs.angle_error;
     
     // 积分项
@@ -534,11 +452,8 @@ static nav_ahrs_status_enum nav_ahrs_angle_pid_control(void)
     pid->error_last = pid->error;
     
     // 计算左右轮速度
-<<<<<<< HEAD
     float direction_adjust = pid->output * 0.01f; 
-=======
-    float direction_adjust = pid->output * 0.01f;  // PID输出缩放到速度调整量 (m/s)
->>>>>>> dev
+
     
     nav_ahrs.left_speed = nav_ahrs.base_speed - direction_adjust;
     nav_ahrs.right_speed = nav_ahrs.base_speed + direction_adjust;

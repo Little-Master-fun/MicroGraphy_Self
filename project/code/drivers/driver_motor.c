@@ -8,7 +8,7 @@
 * 2025-09-17        LittleMaster       1.0v              创建基础功能
 * 2025-09-17        LittleMaster       2.0v              修复控制逻辑
 * 2025-09-23        LittleMaster       3.0v              改用双PWM控制
-* 2025-11-05        AI Assistant       4.0v              修改为TB67H420FTG标准控制方式
+* 2025-11-05        LittleMaster       4.0v              修改为TB67H420FTG标准控制方式
 * 
 * 文件作用说明：
 * 本文件是双电机驱动系统的实现文件，使用TB67H420FTG双H桥驱动芯片
@@ -247,12 +247,12 @@ static void motor_set_direction_pins(motor_id_enum motor_id, uint8 direction)
     // 根据方向确定IN1/IN2电平（已反转方向以匹配编码器）
     switch (direction)
     {
-        case MOTOR_DIR_CW:      // 正转（已反转）: IN1=0, IN2=1
+        case MOTOR_DIR_CW:      // 正转（: IN1=0, IN2=1
             in1_level = 0;
             in2_level = 1;
             break;
             
-        case MOTOR_DIR_CCW:     // 反转（已反转）: IN1=1, IN2=0
+        case MOTOR_DIR_CCW:     // 反转 ）: IN1=1, IN2=0
             in1_level = 1;
             in2_level = 0;
             break;

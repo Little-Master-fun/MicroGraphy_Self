@@ -209,15 +209,6 @@ ahrs_status_enum ahrs_complementary_init(void)
         g_ahrs_debug.config_sens_rate1 = SENSITIVITY_RATE1;
         g_ahrs_debug.expected_sensitivity = SENSITIVITY_RATE1 * (float)AVG_FACTOR;
         
-        printf("陀螺仪实际配置 - 灵敏度Rate1: %d LSB/dps, Rate2: %d LSB/dps, 抽取率: %d\r\n", 
-               actual_sens_rate1, actual_sens_rate2, actual_dec_rate2);
-        printf("代码中使用的灵敏度: %.0f LSB/dps\r\n", SENSITIVITY_RATE1);
-        printf("期望转换因子: %.0f (SENS * AVG_FACTOR)\r\n", g_ahrs_debug.expected_sensitivity);
-        
-        if(actual_sens_rate1 != (uint16_t)SENSITIVITY_RATE1)
-        {
-            printf("警告：实际灵敏度与代码配置不匹配！\r\n");
-        }
     }
     
     // 测试SPI通信稳定性
